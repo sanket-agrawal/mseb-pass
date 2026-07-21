@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Plus, Bell, User } from 'lucide-react';
+import { Search, Plus, Bell, User, Settings } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { getAuthUser } from '@/lib/auth';
 
 const getTitleFromPath = (path) => {
   if (path === '/' || path === '/dashboard') return 'Dashboard';
@@ -14,6 +15,7 @@ const getTitleFromPath = (path) => {
   if (path === '/drivers') return 'Drivers';
   if (path === '/substations') return 'Substations';
   if (path === '/export') return 'Excel Export';
+  if (path === '/settings') return 'System Settings';
   if (path === '/login') return 'Login';
   return 'MSEB Gate Pass';
 };
@@ -21,6 +23,11 @@ const getTitleFromPath = (path) => {
 export default function Header() {
   const pathname = usePathname();
   const title = getTitleFromPath(pathname);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    setUser(getAuthUser());
+  }, []);
 
   return (
     <header className="app-header">
@@ -33,7 +40,7 @@ export default function Header() {
 
       {/* Actions & Profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {/* Search Input Bar (Hidden on small screens < 640px for clean layout) */}
+        {/* Search Input Bar (Hidden on small screens < 640px) */}
         <div className="header-search-bar" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <Search style={{ width: 15, height: 15, color: 'var(--gray-400)', position: 'absolute', left: 10, pointerEvents: 'none' }} />
           <input
@@ -61,67 +68,41 @@ export default function Header() {
           </Link>
         )}
 
-        {/* Notification Bell */}
-        <button
-          style={{
-            position: 'relative',
-            background: 'none',
-            border: 'none',
-            color: 'var(--gray-600)',
-            cursor: 'pointer',
-            padding: 6,
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center'
-          }}
-        >
-          <Bell style={{ width: 18, height: 18 }} />
-          <span
-            style={{
-              position: 'absolute',
-              top: 4,
-              right: 4,
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              backgroundColor: 'var(--accent-500)'
-            }}
-          />
-        </button>
-
-        {/* User Avatar Badge */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 6px',
-            borderRadius: 'var(--radius-full)',
-            backgroundColor: 'var(--gray-100)',
-            border: '1px solid var(--gray-200)',
-            cursor: 'pointer'
-          }}
-        >
+        {/* User Profile Avatar Link to Settings */}
+        <Link href="/settings" style={{ textDecoration: 'none' }}>
           <div
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              backgroundColor: 'var(--primary-600)',
-              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 'var(--text-xs)',
-              fontWeight: 700
+              gap: '6px',
+              padding: '4px 8px',
+              borderRadius: 'var(--radius-full)',
+              backgroundColor: 'var(--gray-100)',
+              border: '1px solid var(--gray-200)',
+              cursor: 'pointer'
             }}
           >
-            <User style={{ width: 13, height: 13 }} />
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                backgroundColor: 'var(--primary-600)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 700
+              }}
+            >
+              {user?.name?.[0] || <User style={{ width: 13, height: 13 }} />}
+            </div>
+            <span className="header-user-name" style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-800)', paddingRight: 2 }}>
+              {user?.name?.split(' ')[0] || 'Admin'}
+            </span>
           </div>
-          <span className="header-user-name" style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-800)', paddingRight: 4 }}>
-            Admin
-          </span>
-        </div>
+        </Link>
       </div>
     </header>
   );

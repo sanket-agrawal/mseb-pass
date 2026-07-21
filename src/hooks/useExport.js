@@ -1,20 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { exportGatePassesToExcel } from '@/lib/excelExport';
 
 export function useExport() {
   const [exporting, setExporting] = useState(false);
 
-  const exportToExcel = (data, filename = 'MSEB_GatePasses.xlsx') => {
+  const exportToExcel = (data, options = {}) => {
     setExporting(true);
     try {
-      // Stub for export functionality - full logic in Phase 4
-      console.log('Exporting data:', data);
-      setTimeout(() => {
-        setExporting(false);
-      }, 500);
+      const filename = exportGatePassesToExcel(data, options);
+      setExporting(false);
+      return filename;
     } catch (e) {
       setExporting(false);
+      throw e;
     }
   };
 

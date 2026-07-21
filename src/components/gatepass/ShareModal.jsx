@@ -1,0 +1,264 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Modal from '@/components/ui/Modal';
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
+import { shareViaWhatsApp, copyPassLinkToClipboard, getPublicGatePassUrl, formatWhatsAppMessage } from '@/lib/shareService';
+import { addShareLog } from '@/store/gatepassStore';
+import { Mail, Copy, Send, Check } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+
+export default function ShareModal({ isOpen, onClose, pass }) {
+  const [activeTab, setActiveTab] = useState('whatsapp'); // 'whatsapp' | 'email' | 'link'
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  useEffect(() => {
+    if (pass) {
+      setPhoneNumber(pass.driver_mobile || '');
+      setRecipientName(pass.recipient_name || '');
+    }
+  }, [pass]);
+
+  if (!pass) return null;
+
+  const publicUrl = getPublicGatePassUrl(pass);
+  const waPreviewText = formatWhatsAppMessage(pass, publicUrl);
+
+  const handleWhatsAppSend = () => {
+    shareViaWhatsApp(pass, phoneNumber);
+    addShareLog(pass.id, {
+      method: 'whatsapp',
+      recipient: phoneNumber || pass.driver_mobile || 'Driver',
+      shared_by: 'Admin'
+    });
+    toast.success('Opened WhatsApp with pass details!', { icon: '📱' });
+    onClose();
+  };
+
+  const handleCopyLink = async () => {
+    await copyPassLinkToClipboard(pass);
+    addShareLog(pass.id, {
+      method: 'link',
+      recipient: 'Direct Link Copied',
+      shared_by: 'Admin'
+    });
+    setCopied(true);
+    toast.success('Public view link copied to clipboard!', { icon: '🔗' });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSendEmail = async () => {
+    if (!email) {
+      toast.error('Please enter a recipient email address');
+      return;
+    }
+
+    setSendingEmail(true);
+    toast.loading('Sending email...', { id: 'email-toast' });
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gatePass: pass,
+          recipientEmail: email,
+          recipientName
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send email');
+
+      addShareLog(pass.id, {
+        method: 'email',
+        recipient: email,
+        shared_by: 'Admin'
+      });
+
+      toast.success(`Email sent to ${email}!`, { id: 'email-toast', icon: '📧' });
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to send email. Please try again.', { id: 'email-toast' });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`Share Gate Pass: ${pass.id}`} size="md">
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '1.25rem' }}>
+        <button
+          onClick={() => setActiveTab('whatsapp')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            border: 'none',
+            borderBottom: activeTab === 'whatsapp' ? '2px solid var(--success-600)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'whatsapp' ? 'var(--success-700)' : 'var(--gray-600)',
+            fontWeight: 700,
+            fontSize: 'var(--text-xs)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6
+          }}
+        >
+          <WhatsAppIcon size={16} color={activeTab === 'whatsapp' ? 'var(--success-600)' : 'var(--gray-600)'} />
+          WhatsApp
+        </button>
+
+        <button
+          onClick={() => setActiveTab('email')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            border: 'none',
+            borderBottom: activeTab === 'email' ? '2px solid var(--primary-600)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'email' ? 'var(--primary-700)' : 'var(--gray-600)',
+            fontWeight: 700,
+            fontSize: 'var(--text-xs)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6
+          }}
+        >
+          <Mail style={{ width: 16, height: 16 }} />
+          Email
+        </button>
+
+        <button
+          onClick={() => setActiveTab('link')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            border: 'none',
+            borderBottom: activeTab === 'link' ? '2px solid var(--accent-600)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'link' ? 'var(--accent-700)' : 'var(--gray-600)',
+            fontWeight: 700,
+            fontSize: 'var(--text-xs)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6
+          }}
+        >
+          <Copy style={{ width: 16, height: 16 }} />
+          Copy Link
+        </button>
+      </div>
+
+      {/* WhatsApp Tab Content */}
+      {activeTab === 'whatsapp' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Input
+            label="Driver Mobile Number (WhatsApp)"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="9876543210"
+            helperText="Driver's 10-digit mobile number"
+          />
+
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--gray-700)', display: 'block', marginBottom: 4 }}>
+              Message Preview:
+            </label>
+            <pre
+              style={{
+                backgroundColor: 'var(--gray-50)',
+                border: '1px solid var(--gray-200)',
+                padding: '10px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '11px',
+                whiteSpace: 'pre-wrap',
+                maxHeight: 180,
+                overflowY: 'auto',
+                color: 'var(--gray-800)',
+                fontFamily: 'var(--font-mono)'
+              }}
+            >
+              {waPreviewText}
+            </pre>
+          </div>
+
+          <Button variant="accent" icon={() => <WhatsAppIcon size={18} color="#0f172a" />} fullWidth onClick={handleWhatsAppSend}>
+            Send via WhatsApp
+          </Button>
+        </div>
+      )}
+
+      {/* Email Tab Content */}
+      {activeTab === 'email' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Input
+            label="Recipient Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="ae.shindkheda@mseb.com"
+          />
+
+          <Input
+            label="Recipient Name"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+            placeholder="Name or Designation"
+          />
+
+          <Button variant="primary" icon={Send} loading={sendingEmail} fullWidth onClick={handleSendEmail}>
+            Send Email
+          </Button>
+        </div>
+      )}
+
+      {/* Copy Link Tab Content */}
+      {activeTab === 'link' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--gray-700)', display: 'block', marginBottom: 4 }}>
+              Public Mobile View URL:
+            </label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                readOnly
+                value={publicUrl}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                  fontSize: 'var(--text-xs)',
+                  fontFamily: 'var(--font-mono)',
+                  backgroundColor: 'var(--gray-50)',
+                  color: 'var(--gray-800)'
+                }}
+              />
+              <Button variant={copied ? 'secondary' : 'primary'} icon={copied ? Check : Copy} onClick={handleCopyLink}>
+                {copied ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+          </div>
+
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)', margin: 0 }}>
+            Anyone with this link can view the digital gate pass and download the PDF on their phone without logging in.
+          </p>
+        </div>
+      )}
+    </Modal>
+  );
+}

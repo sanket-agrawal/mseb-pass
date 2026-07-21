@@ -1,7 +1,5 @@
 import '@/app/globals.css';
-import Sidebar from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
-import MobileNav from '@/components/layout/MobileNav';
+import AppLayoutWrapper from '@/components/layout/AppLayoutWrapper';
 import { Toaster } from 'react-hot-toast';
 import { APP_INFO } from '@/lib/constants';
 
@@ -14,14 +12,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <div className="app-layout">
-          <Sidebar />
-          <div className="main-content">
-            <Header />
-            <main>{children}</main>
-          </div>
-          <MobileNav />
-        </div>
+        <AppLayoutWrapper>{children}</AppLayoutWrapper>
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       </body>
     </html>

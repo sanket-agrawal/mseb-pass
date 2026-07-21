@@ -196,7 +196,33 @@ export function saveDriver(driverData) {
   return updated;
 }
 
+export function addShareLog(id, shareEntry) {
+  ensureInitialized();
+  if (typeof window === 'undefined') return;
+
+  const passes = getGatePasses();
+  const updatedPasses = passes.map(p => {
+    if (p.id === id) {
+      const history = p.share_history || [];
+      return {
+        ...p,
+        share_history: [
+          ...history,
+          {
+            ...shareEntry,
+            timestamp: new Date().toISOString()
+          }
+        ]
+      };
+    }
+    return p;
+  });
+
+  localStorage.setItem(STORAGE_KEY_PASSES, JSON.stringify(updatedPasses));
+}
+
 // Substation operations
+
 export function getSubstations() {
   ensureInitialized();
   if (typeof window === 'undefined') return [];

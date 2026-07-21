@@ -7,9 +7,13 @@ import Button from '@/components/ui/Button';
 import StatusTimeline from '@/components/gatepass/StatusTimeline';
 import StatusUpdateModal from '@/components/gatepass/StatusUpdateModal';
 import GatePassPreview from '@/components/gatepass/GatePassPreview';
+import ShareModal from '@/components/gatepass/ShareModal';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import Table from '@/components/ui/Table';
 import { useGatePass } from '@/hooks/useGatePass';
 import { downloadGatePass } from '@/lib/pdfService';
+import { shareViaWhatsApp } from '@/lib/shareService';
+import { addShareLog } from '@/store/gatepassStore';
 import {
   ArrowLeft,
   Download,
@@ -19,7 +23,9 @@ import {
   RotateCcw,
   CheckCircle,
   Eye,
-  FileText
+  FileText,
+  Clock,
+  Send
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -30,6 +36,7 @@ export default function GatePassDetailPage({ params }) {
   const router = useRouter();
   const { getPass, updateStatus } = useGatePass();
   const [isStatusModalOpen, setStatusModalOpen] = useState(false);
+  const [isShareModalOpen, setShareModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'preview'
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
@@ -81,6 +88,16 @@ export default function GatePassDetailPage({ params }) {
     }, 200);
   };
 
+  const handleQuickWhatsAppDriver = () => {
+    shareViaWhatsApp(pass, pass.driver_mobile);
+    addShareLog(pass.id, {
+      method: 'whatsapp',
+      recipient: pass.driver_mobile || pass.driver_name || 'Driver',
+      shared_by: 'Admin'
+    });
+    toast.success('Opened WhatsApp with pass details!', { icon: '📱' });
+  };
+
   const materialColumns = [
     { header: 'अ.नं.', accessorKey: 'sr_no', width: '50px' },
     { header: 'मालाचे / रोहित्र वर्णन', accessorKey: 'item_type', cell: (r) => <strong>{r.item_type || 'Transformer'}</strong> },
@@ -119,26 +136,34 @@ export default function GatePassDetailPage({ params }) {
             <Button variant="outline" icon={ArrowLeft}>Back</Button>
           </Link>
 
+          <Button variant="accent" icon={() => <WhatsAppIcon size={18} color="#0f172a" />} onClick={handleQuickWhatsAppDriver}>
+            Send to Driver
+          </Button>
+
+          <Button variant="secondary" icon={Share2} onClick={() => setShareModalOpen(true)}>
+            Share
+          </Button>
+
           <Link href={`/gatepass/${pass.id}/edit`} style={{ textDecoration: 'none' }}>
-            <Button variant="secondary" icon={Edit}>Edit</Button>
+            <Button variant="outline" icon={Edit}>Edit</Button>
           </Link>
 
           <Button variant="outline" icon={CheckCircle} onClick={() => setStatusModalOpen(true)}>
-            Update Status
+            Status
           </Button>
 
           {canCreateReturn && (
             <Button variant="accent" icon={RotateCcw} onClick={handleCreateReturn}>
-              Create Return Pass (आवक)
+              Create Return Pass
             </Button>
           )}
 
           <Button variant="secondary" icon={Printer} onClick={handlePrint}>
-            Print Pass
+            Print
           </Button>
 
           <Button variant="primary" icon={Download} loading={downloadingPdf} onClick={handleDownloadPdf}>
-            Download PDF
+            PDF
           </Button>
         </div>
       }
@@ -170,36 +195,6 @@ export default function GatePassDetailPage({ params }) {
           </div>
           <Link href={`/gatepass/${pass.linked_gatepass_id}`} style={{ textDecoration: 'none' }}>
             <Button variant="outline" size="sm">View Outward Pass</Button>
-          </Link>
-        </div>
-      )}
-
-      {pass.return_gatepass_id && (
-        <div
-          style={{
-            padding: '1rem 1.25rem',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--success-50)',
-            border: '1px solid var(--success-200)',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CheckCircle style={{ width: 20, height: 20, color: 'var(--success-600)' }} />
-            <div>
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--success-700)' }}>
-                RETURN PASS CREATED
-              </span>
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-800)' }}>
-                Return pass generated for faulty transformer: <strong>{pass.return_gatepass_id}</strong>
-              </p>
-            </div>
-          </div>
-          <Link href={`/gatepass/${pass.return_gatepass_id}`} style={{ textDecoration: 'none' }}>
-            <Button variant="outline" size="sm">View Return Pass</Button>
           </Link>
         </div>
       )}
@@ -315,7 +310,7 @@ export default function GatePassDetailPage({ params }) {
             />
           </Card>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
             <Card header="Destination Line Staff & Verification">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 'var(--text-sm)' }}>
                 <div><strong>Staff Name:</strong> {pass.line_staff_name || '-'}</div>
@@ -333,6 +328,50 @@ export default function GatePassDetailPage({ params }) {
               </div>
             </Card>
           </div>
+
+          {/* Share History Log Card */}
+          <Card header="📤 Digital Distribution & Share History">
+            {pass.share_history && pass.share_history.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {pass.share_history.map((log, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      backgroundColor: 'var(--gray-50)',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--gray-200)',
+                      fontSize: 'var(--text-xs)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {log.method === 'whatsapp' ? (
+                        <WhatsAppIcon size={16} color="var(--success-600)" />
+                      ) : log.method === 'email' ? (
+                        <Send style={{ width: 14, height: 14, color: 'var(--primary-600)' }} />
+                      ) : (
+                        <Share2 style={{ width: 14, height: 14, color: 'var(--accent-600)' }} />
+                      )}
+                      <span style={{ fontWeight: 700, color: 'var(--gray-900)' }}>
+                        Shared via {log.method.toUpperCase()}
+                      </span>
+                      <span style={{ color: 'var(--gray-600)' }}>to {log.recipient}</span>
+                    </div>
+                    <span style={{ color: 'var(--gray-500)', fontSize: '10px' }}>
+                      {new Date(log.timestamp).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', margin: 0 }}>
+                No share history recorded yet. Click "Send to Driver" or "Share" above to distribute this pass via WhatsApp or Email.
+              </p>
+            )}
+          </Card>
         </>
       ) : (
         /* Yellow Paper Web Preview */
@@ -341,12 +380,18 @@ export default function GatePassDetailPage({ params }) {
         </div>
       )}
 
-      {/* Status Modal */}
+      {/* Modals */}
       <StatusUpdateModal
         isOpen={isStatusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         currentStatus={pass.status}
         onConfirm={handleStatusConfirm}
+      />
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        pass={pass}
       />
     </PageWrapper>
   );

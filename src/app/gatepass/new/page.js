@@ -5,75 +5,124 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import GatePassForm from '@/components/gatepass/GatePassForm';
 import Loader from '@/components/ui/Loader';
 import { useGatePass } from '@/hooks/useGatePass';
+import { shareViaWhatsApp } from '@/lib/shareService';
+import { addShareLog } from '@/store/gatepassStore';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import Button from '@/components/ui/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
-function NewGatePassContent() {
+function GatePassNewFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { createGatePass, getPass } = useGatePass();
-
   const linkedId = searchParams.get('linked_id');
+  const { createPass, getPass } = useGatePass();
+
   const linkedPass = linkedId ? getPass(linkedId) : null;
 
-  let prefillData = null;
-  if (linkedPass) {
-    prefillData = {
-      type: 'inward',
-      status: 'return_issued',
-      recipient_name: 'Executive Engineer',
-      recipient_designation: 'EE',
-      destination_section: 'Dondaicha Section',
-      destination_substation: 'Dondaicha 132kV Substation',
-      destination_division: 'Dhule',
-      driver_id: linkedPass.driver_id,
-      driver_name: linkedPass.driver_name,
-      driver_mobile: linkedPass.driver_mobile,
-      vehicle_number: linkedPass.vehicle_number,
-      contractor_name: linkedPass.contractor_name,
-      materials: (linkedPass.materials || []).map((m, idx) => ({
-        ...m,
-        sr_no: idx + 1,
-        condition: 'faulty',
-        remarks: 'Faulty transformer returned from site'
-      })),
-      line_staff_name: linkedPass.line_staff_name,
-      line_staff_mobile: linkedPass.line_staff_mobile,
-      line_staff_cpf: linkedPass.line_staff_cpf,
-      sender_name: linkedPass.line_staff_name || 'Line Staff',
-      sender_designation: 'Line Staff',
-      remarks: 'दूषित / जळालेले रोहित्र परतीसाठी पाठवले. ऑइल गळती नाही.',
-      linked_gatepass_id: linkedPass.id
-    };
-  }
-
-  const handleFormSubmit = (payload) => {
+  const handleFormSubmit = (formData) => {
     try {
-      const created = createGatePass(payload);
-      toast.success(`Gate Pass ${created.id} issued successfully!`);
-      router.push(`/gatepass/${created.id}`);
-    } catch (e) {
+      const newPass = createPass(formData);
+      toast.success(`Gate Pass ${newPass.id} created successfully!`);
+
+      // Trigger auto-share prompt toast for WhatsApp
+      toast.custom((t) => (
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '2px solid var(--success-600)',
+            borderRadius: 'var(--radius-md)',
+            padding: '12px 16px',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12
+          }}
+        >
+          <div>
+            <strong style={{ fontSize: '13px', color: 'var(--gray-900)' }}>
+              Pass #{newPass.serial_number} Issued!
+            </strong>
+            <p style={{ fontSize: '11px', color: 'var(--gray-600)', margin: 0 }}>
+              Send pass details to driver {newPass.driver_name} via WhatsApp?
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => {
+                shareViaWhatsApp(newPass, newPass.driver_mobile);
+                addShareLog(newPass.id, {
+                  method: 'whatsapp',
+                  recipient: newPass.driver_mobile || 'Driver',
+                  shared_by: 'Admin'
+                });
+                toast.dismiss(t.id);
+              }}
+              style={{
+                backgroundColor: 'var(--success-600)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              📱 Send WhatsApp
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              style={{
+                backgroundColor: 'var(--gray-200)',
+                color: 'var(--gray-800)',
+                border: 'none',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer'
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ), { duration: 10000 });
+
+      router.push(`/gatepass/${newPass.id}`);
+    } catch (error) {
+      console.error(error);
       toast.error('Failed to create gate pass');
     }
   };
 
   return (
-    <PageWrapper
-      title={linkedPass ? `Create Return Pass for ${linkedPass.id}` : 'Create New Gate Pass'}
-      subtitle="Fill in transformer details, driver assignment, and substation routing."
-    >
-      <GatePassForm
-        initialData={prefillData}
-        onSubmit={handleFormSubmit}
-      />
-    </PageWrapper>
+    <GatePassForm
+      onSubmit={handleFormSubmit}
+      linkedPass={linkedPass}
+      onCancel={() => router.push('/gatepass')}
+    />
   );
 }
 
 export default function NewGatePassPage() {
   return (
-    <Suspense fallback={<Loader text="Loading gate pass form..." />}>
-      <NewGatePassContent />
-    </Suspense>
+    <PageWrapper
+      title="Issue Digital Gate Pass"
+      subtitle="Fill in transport and transformer details matching the MSEB physical yellow pass form."
+      actions={
+        <Link href="/gatepass" style={{ textDecoration: 'none' }}>
+          <Button variant="outline" icon={ArrowLeft}>
+            Cancel
+          </Button>
+        </Link>
+      }
+    >
+      <Suspense fallback={<Loader text="Loading form..." />}>
+        <GatePassNewFormContent />
+      </Suspense>
+    </PageWrapper>
   );
 }

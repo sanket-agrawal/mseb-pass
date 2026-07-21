@@ -9,9 +9,9 @@ import StatusUpdateModal from '@/components/gatepass/StatusUpdateModal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
-import Select from '@/components/ui/Select';
 import { useGatePass } from '@/hooks/useGatePass';
-import { Plus, Search, LayoutGrid, List, RotateCcw } from 'lucide-react';
+import { exportGatePassesToExcel } from '@/lib/excelExport';
+import { Plus, Search, LayoutGrid, List, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -67,16 +67,35 @@ export default function GatePassDirectoryPage() {
     }
   };
 
+  const handleExportFiltered = () => {
+    if (filteredPasses.length === 0) {
+      toast.error('No gate passes match the current filter criteria');
+      return;
+    }
+    toast.loading(`Exporting ${filteredPasses.length} records...`, { id: 'directory-export' });
+    try {
+      const filename = exportGatePassesToExcel(filteredPasses);
+      toast.success(`Exported to ${filename}`, { id: 'directory-export' });
+    } catch (e) {
+      toast.error('Failed to export to Excel', { id: 'directory-export' });
+    }
+  };
+
   return (
     <PageWrapper
       title="Gate Pass Directory"
       subtitle="Comprehensive registry of all transformer transport gate passes (आवक व जावक पास)."
       actions={
-        <Link href="/gatepass/new" style={{ textDecoration: 'none' }}>
-          <Button variant="accent" icon={Plus}>
-            New Gate Pass
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <Button variant="outline" icon={FileSpreadsheet} onClick={handleExportFiltered}>
+            Export Filtered ({filteredPasses.length})
           </Button>
-        </Link>
+          <Link href="/gatepass/new" style={{ textDecoration: 'none' }}>
+            <Button variant="accent" icon={Plus}>
+              New Gate Pass
+            </Button>
+          </Link>
+        </div>
       }
     >
       {/* Control & Filter Bar */}
@@ -122,9 +141,9 @@ export default function GatePassDirectoryPage() {
 
           {/* Search + View Mode */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ width: 260 }}>
+            <div style={{ width: 240 }}>
               <Input
-                placeholder="Search GP#, Sr No, Driver, Substation..."
+                placeholder="Search GP#, Driver, Substation..."
                 icon={Search}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
