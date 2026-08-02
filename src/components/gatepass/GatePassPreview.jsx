@@ -8,6 +8,7 @@ export default function GatePassPreview({ data, className = '' }) {
 
   const isOutward = data.type === 'outward';
   const materials = data.materials || [];
+  const officeName = data.from_office?.name || data.sender_designation || 'MSEDCL Office';
 
   return (
     <div className={`gatepass-preview ${className}`}>
@@ -21,7 +22,7 @@ export default function GatePassPreview({ data, className = '' }) {
             </h2>
           </div>
           <p style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600, margin: 0 }}>
-            गाळण शाखा-दोंडाईचा जि.धुळे (Sub Division Dondaicha, Dist. Dhule)
+            {officeName} (Gate Pass System)
           </p>
           <div className="preview-pass-badge">
             गेट पास ({isOutward ? 'जावक / OUTWARD' : 'आवक / INWARD'})
@@ -31,15 +32,15 @@ export default function GatePassPreview({ data, className = '' }) {
         {/* Info Row: Serial & Date */}
         <div className="preview-info-row">
           <div>
-            <span style={{ color: '#475569', fontWeight: 600 }}>क्रमांक (Serial No.): </span>
+            <span style={{ color: '#475569', fontWeight: 600 }}>क्रमांक (Gate Pass ID): </span>
             <span style={{ fontWeight: 800, color: '#0f172a', textDecoration: 'underline' }}>
-              {data.serial_number || data.id}
+              {data.display_id || data.serial_number || data.id}
             </span>
           </div>
           <div>
             <span style={{ color: '#475569', fontWeight: 600 }}>दिनांक (Date): </span>
             <span style={{ fontWeight: 800, color: '#0f172a', textDecoration: 'underline' }}>
-              {data.date}
+              {data.date ? new Date(data.date).toISOString().split('T')[0] : ''}
             </span>
           </div>
         </div>
@@ -55,19 +56,19 @@ export default function GatePassPreview({ data, className = '' }) {
 
           <div className="field-row">
             <span className="field-label">गाडी नं. (Vehicle No.):</span>
-            <span className="field-value font-mono">{data.vehicle_number}</span>
+            <span className="field-value font-mono">{data.vehicle_number || 'TBD'}</span>
           </div>
 
           <div className="field-row">
             <span className="field-label">सामान आणणाऱ्याचे नांव (Driver):</span>
             <span className="field-value">
-              {data.driver_name} (मोबाईल: {data.driver_mobile})
+              {data.driver_name || 'TBD'} {data.driver_mobile ? `(Phone: ${data.driver_mobile})` : ''}
             </span>
           </div>
 
           <div className="field-row">
             <span className="field-label">विजखात्यास/ठेकेदारास (Contractor):</span>
-            <span className="field-value">{data.contractor_name}</span>
+            <span className="field-value">{data.contractor_name || 'MSEDCL'}</span>
           </div>
         </div>
 
@@ -90,17 +91,35 @@ export default function GatePassPreview({ data, className = '' }) {
           </thead>
           <tbody>
             {materials.map((m, idx) => (
-              <tr key={idx}>
-                <td style={{ textAlign: 'center' }}>{idx + 1}</td>
-                <td>{m.make || '-'}</td>
-                <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{m.serial_number || '-'}</td>
-                <td>{m.job_number || '-'}</td>
-                <td style={{ fontWeight: 700, color: 'var(--primary-800)' }}>{m.capacity || '-'}</td>
-                <td>{m.village_name} {m.dtc_number ? `(DTC: ${m.dtc_number})` : ''}</td>
-                <td style={{ fontWeight: 600 }}>
-                  {m.condition === 'faulty' ? 'दूषित/जळालेले' : m.condition === 'repaired' ? 'दुरुस्त' : 'नवीन'}
-                </td>
-              </tr>
+              <React.Fragment key={idx}>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>{idx + 1}</td>
+                  <td>{m.make || '-'}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{m.serial_number || '-'}</td>
+                  <td>{m.job_number || '-'}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--primary-800)' }}>{m.capacity || '-'}</td>
+                  <td>{m.village_name} {m.dtc_number ? `(DTC: ${m.dtc_number})` : ''}</td>
+                  <td style={{ fontWeight: 600 }}>
+                    {m.condition === 'faulty' ? 'दूषित/जळालेले' : m.condition === 'repaired' ? 'दुरुस्त' : 'नवीन'}
+                  </td>
+                </tr>
+                {/* Render Failed Job Record if present */}
+                {m.failed_job_record && (
+                  <tr>
+                    <td colSpan={7} style={{ backgroundColor: '#fef2f2', padding: '6px 12px', fontSize: '11px', color: '#991b1b' }}>
+                      ⚠️ <strong>Failed Job Record:</strong> GP Reading: {m.failed_job_record.gp_reading || 'N/A'} | Fresh Reading: {m.failed_job_record.fresh_reading || 'N/A'} | Oil Drain Serial: {m.failed_job_record.oil_drain_serial_number || 'N/A'} | Recorded By CPF: {m.failed_job_record.recorded_by_cpf}
+                    </td>
+                  </tr>
+                )}
+                {/* Render Healthy Job Record if present */}
+                {m.healthy_job_record && (
+                  <tr>
+                    <td colSpan={7} style={{ backgroundColor: '#f0fdf4', padding: '6px 12px', fontSize: '11px', color: '#166534' }}>
+                      ✅ <strong>Healthy Job Record:</strong> R-Phase: {m.healthy_job_record.ryb_r_reading}A | Y-Phase: {m.healthy_job_record.ryb_y_reading}A | B-Phase: {m.healthy_job_record.ryb_b_reading}A | Spark Test: {m.healthy_job_record.spark_test?.toUpperCase()} | Tested By CPF: {m.healthy_job_record.tested_by_cpf}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -122,7 +141,7 @@ export default function GatePassPreview({ data, className = '' }) {
           <div className="sig-column">
             <div className="sig-line">देणाऱ्याची सही व हुद्दा (Sender Signature)</div>
             <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: 4 }}>
-              {data.sender_name} ({data.sender_designation})
+              {data.sender_name || 'Sender'} ({data.sender_designation || 'Officer'})
             </div>
           </div>
 
@@ -136,9 +155,9 @@ export default function GatePassPreview({ data, className = '' }) {
 
         {/* Footer */}
         <div className="preview-footer">
-          <span>Digital Gate Pass ID: <strong>{data.id}</strong></span>
+          <span>Digital Gate Pass ID: <strong>{data.display_id || data.id}</strong></span>
           <span>Generated: {new Date().toLocaleString()}</span>
-          <span>MSEDCL Sub Division Dondaicha</span>
+          <span>{officeName}</span>
         </div>
       </div>
     </div>

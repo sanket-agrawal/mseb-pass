@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useState } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -10,10 +10,10 @@ import GatePassPreview from '@/components/gatepass/GatePassPreview';
 import ShareModal from '@/components/gatepass/ShareModal';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import Table from '@/components/ui/Table';
-import { useGatePass } from '@/hooks/useGatePass';
+import Loader from '@/components/ui/Loader';
+import { gatePassAPI, shareAPI } from '@/lib/api';
 import { downloadGatePass } from '@/lib/pdfService';
 import { shareViaWhatsApp } from '@/lib/shareService';
-import { addShareLog } from '@/store/gatepassStore';
 import {
   ArrowLeft,
   Download,
@@ -25,7 +25,8 @@ import {
   Eye,
   FileText,
   Clock,
-  Send
+  Send,
+  History
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -34,13 +35,51 @@ import { toast } from 'react-hot-toast';
 export default function GatePassDetailPage({ params }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { getPass, updateStatus } = useGatePass();
+  const [pass, setPass] = useState(null);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isStatusModalOpen, setStatusModalOpen] = useState(false);
   const [isShareModalOpen, setShareModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'preview'
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'preview' | 'audit'
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  const pass = getPass(resolvedParams.id);
+  useEffect(() => {
+    fetchPassData();
+  }, [resolvedParams.id]);
+
+  const fetchPassData = async () => {
+    setLoading(true);
+    try {
+      const res = await gatePassAPI.get(resolvedParams.id);
+      if (res && res.data) {
+        setPass(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load gate pass');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAuditTrail = async () => {
+    try {
+      const res = await gatePassAPI.getAudit(resolvedParams.id);
+      if (res && res.data) {
+        setAuditLogs(res.data);
+      }
+    } catch (e) {
+      console.warn('Audit fetch failed:', e);
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageWrapper title="Gate Pass Detail">
+        <Loader text="Fetching digital gate pass record..." />
+      </PageWrapper>
+    );
+  }
 
   if (!pass) {
     return (
@@ -58,9 +97,16 @@ export default function GatePassDetailPage({ params }) {
   const isOutward = pass.type === 'outward';
   const canCreateReturn = isOutward && (pass.status === 'delivered' || pass.status === 'completed') && !pass.return_gatepass_id;
 
-  const handleStatusConfirm = (newStatus, remarks) => {
-    updateStatus(pass.id, newStatus, remarks);
-    toast.success(`Status updated to ${newStatus}`);
+  const handleStatusConfirm = async (newStatus, remarks) => {
+    try {
+      toast.loading(`Updating status to ${newStatus}...`, { id: 'status-toast' });
+      await gatePassAPI.updateStatus(pass.id, newStatus, remarks);
+      toast.success(`Status updated to ${newStatus}!`, { id: 'status-toast' });
+      setStatusModalOpen(false);
+      fetchPassData();
+    } catch (err) {
+      toast.error(err.message || 'Status update failed', { id: 'status-toast' });
+    }
   };
 
   const handleCreateReturn = () => {
@@ -88,13 +134,13 @@ export default function GatePassDetailPage({ params }) {
     }, 200);
   };
 
-  const handleQuickWhatsAppDriver = () => {
+  const handleQuickWhatsAppDriver = async () => {
+    try {
+      await shareAPI.share(pass.id, 'whatsapp', pass.driver_mobile || 'Driver');
+    } catch (e) {
+      console.warn('Share API log error:', e);
+    }
     shareViaWhatsApp(pass, pass.driver_mobile);
-    addShareLog(pass.id, {
-      method: 'whatsapp',
-      recipient: pass.driver_mobile || pass.driver_name || 'Driver',
-      shared_by: 'Admin'
-    });
     toast.success('Opened WhatsApp with pass details!', { icon: '📱' });
   };
 
@@ -128,8 +174,8 @@ export default function GatePassDetailPage({ params }) {
 
   return (
     <PageWrapper
-      title={`Gate Pass: ${pass.id}`}
-      subtitle={`Serial No. ${pass.serial_number} • Date: ${pass.date}`}
+      title={`Gate Pass: ${pass.display_id || pass.id}`}
+      subtitle={`Serial No. ${pass.serial_number} • Date: ${pass.date ? new Date(pass.date).toISOString().split('T')[0] : ''}`}
       actions={
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Link href="/gatepass" style={{ textDecoration: 'none' }}>
@@ -143,10 +189,6 @@ export default function GatePassDetailPage({ params }) {
           <Button variant="secondary" icon={Share2} onClick={() => setShareModalOpen(true)}>
             Share
           </Button>
-
-          <Link href={`/gatepass/${pass.id}/edit`} style={{ textDecoration: 'none' }}>
-            <Button variant="outline" icon={Edit}>Edit</Button>
-          </Link>
 
           <Button variant="outline" icon={CheckCircle} onClick={() => setStatusModalOpen(true)}>
             Status
@@ -222,6 +264,7 @@ export default function GatePassDetailPage({ params }) {
             <Eye style={{ width: 16, height: 16 }} />
             Detail Cards View
           </button>
+
           <button
             onClick={() => setViewMode('preview')}
             style={{
@@ -242,10 +285,31 @@ export default function GatePassDetailPage({ params }) {
             <FileText style={{ width: 16, height: 16 }} />
             Yellow Pass Form Preview
           </button>
+
+          <button
+            onClick={() => { setViewMode('audit'); fetchAuditTrail(); }}
+            style={{
+              padding: '8px 20px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: 'var(--text-xs)',
+              fontWeight: 700,
+              border: 'none',
+              cursor: 'pointer',
+              backgroundColor: viewMode === 'audit' ? '#1e293b' : 'transparent',
+              color: viewMode === 'audit' ? '#ffffff' : 'var(--gray-700)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <History style={{ width: 16, height: 16 }} />
+            Audit Trail
+          </button>
         </div>
       </div>
 
-      {viewMode === 'cards' ? (
+      {viewMode === 'cards' && (
         <>
           {/* Lifecycle Status Timeline */}
           <Card header="Lifecycle Status Timeline" style={{ marginBottom: '1.5rem' }}>
@@ -280,22 +344,22 @@ export default function GatePassDetailPage({ params }) {
                 <div>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>DRIVER NAME</span>
                   <div style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--gray-900)' }}>
-                    {pass.driver_name}
+                    {pass.driver_name || 'TBD'}
                   </div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)' }}>Phone: {pass.driver_mobile}</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)' }}>Phone: {pass.driver_mobile || 'N/A'}</div>
                 </div>
 
                 <div>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>VEHICLE REGISTRATION</span>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--gray-800)' }}>
-                    {pass.vehicle_number}
+                    {pass.vehicle_number || 'TBD'}
                   </div>
                 </div>
 
                 <div>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>CONTRACTOR (ठेकेदारास)</span>
                   <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-700)' }}>
-                    {pass.contractor_name}
+                    {pass.contractor_name || 'MSEDCL'}
                   </div>
                 </div>
               </div>
@@ -328,56 +392,48 @@ export default function GatePassDetailPage({ params }) {
               </div>
             </Card>
           </div>
-
-          {/* Share History Log Card */}
-          <Card header="📤 Digital Distribution & Share History">
-            {pass.share_history && pass.share_history.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {pass.share_history.map((log, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      backgroundColor: 'var(--gray-50)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--gray-200)',
-                      fontSize: 'var(--text-xs)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {log.method === 'whatsapp' ? (
-                        <WhatsAppIcon size={16} color="var(--success-600)" />
-                      ) : log.method === 'email' ? (
-                        <Send style={{ width: 14, height: 14, color: 'var(--primary-600)' }} />
-                      ) : (
-                        <Share2 style={{ width: 14, height: 14, color: 'var(--accent-600)' }} />
-                      )}
-                      <span style={{ fontWeight: 700, color: 'var(--gray-900)' }}>
-                        Shared via {log.method.toUpperCase()}
-                      </span>
-                      <span style={{ color: 'var(--gray-600)' }}>to {log.recipient}</span>
-                    </div>
-                    <span style={{ color: 'var(--gray-500)', fontSize: '10px' }}>
-                      {new Date(log.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', margin: 0 }}>
-                No share history recorded yet. Click "Send to Driver" or "Share" above to distribute this pass via WhatsApp or Email.
-              </p>
-            )}
-          </Card>
         </>
-      ) : (
-        /* Yellow Paper Web Preview */
+      )}
+
+      {viewMode === 'preview' && (
         <div style={{ marginBottom: '2rem' }}>
           <GatePassPreview data={pass} />
         </div>
+      )}
+
+      {viewMode === 'audit' && (
+        <Card header="Audit Trail & Modification Timeline">
+          {auditLogs.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '0.5rem 0' }}>
+              {auditLogs.map((log, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--gray-50)',
+                    border: '1px solid var(--gray-200)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--primary-700)' }}>
+                    <span>{log.action?.toUpperCase()} — {log.user_name} (CPF: {log.user_cpf})</span>
+                    <span style={{ color: 'var(--gray-500)' }}>{new Date(log.created_at).toLocaleString()}</span>
+                  </div>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-800)', margin: 0 }}>
+                    {log.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', padding: '1rem 0', textAlign: 'center' }}>
+              No audit log entries recorded for this pass yet.
+            </p>
+          )}
+        </Card>
       )}
 
       {/* Modals */}

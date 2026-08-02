@@ -1,8 +1,12 @@
-export const AUTH_STORAGE_KEY = 'mseb_auth_user';
+import { authAPI } from './api';
+
+export const AUTH_USER_KEY = 'mseb_user';
+export const ACCESS_TOKEN_KEY = 'mseb_access_token';
+export const REFRESH_TOKEN_KEY = 'mseb_refresh_token';
 
 export function getAuthUser() {
   if (typeof window === 'undefined') return null;
-  const data = localStorage.getItem(AUTH_STORAGE_KEY);
+  const data = localStorage.getItem(AUTH_USER_KEY);
   if (!data) return null;
   try {
     return JSON.parse(data);
@@ -12,49 +16,71 @@ export function getAuthUser() {
 }
 
 export function isAuthenticated() {
-  return !!getAuthUser();
+  if (typeof window === 'undefined') return false;
+  return !!localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function loginUser(email, password) {
-  // Demo admin credentials validation
-  if (email.toLowerCase().trim() === 'admin@mseb.com' && password === 'admin123') {
-    const user = {
-      id: 'usr_admin_01',
-      name: 'MSEB Admin',
-      email: 'admin@mseb.com',
-      role: 'admin',
-      branch: 'Sub Division Dondaicha',
-      division: 'Dhule Circle',
-      loginTime: new Date().toISOString()
-    };
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-    // Set auth cookie for middleware check
-    document.cookie = `mseb_auth_token=valid_token; path=/; max-age=86400`;
-    return user;
-  }
+export function setSession(user, accessToken, refreshToken) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 
-  // Generic demo fallback login
-  if (email && password && password.length >= 6) {
-    const user = {
-      id: 'usr_' + Date.now(),
-      name: email.split('@')[0],
-      email: email,
-      role: 'admin',
-      branch: 'Sub Division Dondaicha',
-      division: 'Dhule Circle',
-      loginTime: new Date().toISOString()
-    };
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-    document.cookie = `mseb_auth_token=valid_token; path=/; max-age=86400`;
-    return user;
-  }
-
-  throw new Error('Invalid email or password. Use admin@mseb.com / admin123 for demo login.');
+  // Set cookie for Next.js middleware check
+  document.cookie = `mseb_auth_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
 }
 
-export function logoutUser() {
+export async function loginWithPassword(identifier, password) {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    document.cookie = 'mseb_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
+  const response = await authAPI.login(identifier, password);
+  if (response && response.success) {
+    const { user, accessToken, refreshToken } = response.data;
+    setSession(user, accessToken, refreshToken);
+    return user;
+  }
+  throw new Error(response?.message || 'Login failed');
+}
+
+export async function requestOTP(mobile) {
+  const response = await authAPI.requestOTP(mobile);
+  if (response && response.success) {
+    return response.data;
+  }
+  throw new Error(response?.message || 'Failed to send OTP');
+}
+
+export async function verifyOTP(mobile, otp) {
+  const response = await authAPI.verifyOTP(mobile, otp);
+  if (response && response.success) {
+    const { user, accessToken, refreshToken } = response.data;
+    setSession(user, accessToken, refreshToken);
+    return user;
+  }
+  throw new Error(response?.message || 'Invalid OTP');
+}
+
+export async function logoutUser() {
+  try {
+    await authAPI.logout();
+  } catch (e) {
+    console.warn('Logout API error:', e);
+  } finally {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(AUTH_USER_KEY);
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      document.cookie = 'mseb_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
+  }
+}
+
+export async function lookupCPF(cpfNumber) {
+  const response = await authAPI.lookupCPF(cpfNumber);
+  if (response && response.success) {
+    return response.data;
+  }
+  throw new Error(response?.message || 'Official not found');
 }

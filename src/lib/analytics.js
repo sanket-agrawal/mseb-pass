@@ -1,6 +1,7 @@
 import { GATEPASS_STATUS_CONFIG } from './constants';
 
 export function filterPassesByPreset(passes, preset) {
+  if (!Array.isArray(passes)) return [];
   if (!preset || preset === 'all') return passes;
 
   const now = new Date();
@@ -35,7 +36,8 @@ export function filterPassesByPreset(passes, preset) {
 }
 
 export function computeStats(allPasses = [], datePreset = 'all') {
-  const filteredPasses = filterPassesByPreset(allPasses, datePreset);
+  const safePasses = Array.isArray(allPasses) ? allPasses : [];
+  const filteredPasses = filterPassesByPreset(safePasses, datePreset);
   const now = new Date();
 
   // Summary Metrics

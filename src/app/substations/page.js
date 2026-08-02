@@ -1,19 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import SubstationModal from '@/components/substations/SubstationModal';
-import { useDrivers } from '@/hooks/useDrivers';
+import { officeAPI } from '@/lib/api';
 import { Building2, Plus, Edit } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function SubstationsPage() {
-  const { substations, loading, saveSubstation } = useDrivers();
+  const [substations, setSubstations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedSubstation, setSelectedSubstation] = useState(null);
+
+  useEffect(() => {
+    fetchOffices();
+  }, []);
+
+  const fetchOffices = async () => {
+    setLoading(true);
+    try {
+      const res = await officeAPI.list();
+      if (res && res.data) {
+        setSubstations(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load offices');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenAdd = () => {
     setSelectedSubstation(null);
@@ -25,9 +45,20 @@ export default function SubstationsPage() {
     setModalOpen(true);
   };
 
-  const handleSaveSubstation = (formData) => {
-    saveSubstation(formData);
-    toast.success(formData.id ? 'Substation updated successfully' : 'New substation registered successfully');
+  const handleSaveSubstation = async (formData) => {
+    try {
+      if (formData.id) {
+        await officeAPI.update(formData.id, formData);
+        toast.success('Substation updated successfully');
+      } else {
+        await officeAPI.create(formData);
+        toast.success('New substation registered successfully');
+      }
+      setModalOpen(false);
+      fetchOffices();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save substation');
+    }
   };
 
   const columns = [
@@ -41,31 +72,21 @@ export default function SubstationsPage() {
       )
     },
     {
-      header: 'Section',
-      accessorKey: 'section',
+      header: 'Type / Code',
+      accessorKey: 'type',
       cell: (row) => (
         <span style={{ fontWeight: 600, color: 'var(--primary-700)' }}>
-          {row.section || '-'}
+          {row.type || 'sub_office'} {row.code ? `(${row.code})` : ''}
         </span>
       )
     },
     {
-      header: 'Division',
+      header: 'Division / Circle',
       accessorKey: 'division',
       cell: (row) => (
         <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)' }}>
-          {row.division || 'Dhule'}
+          {row.division || row.circle || 'Division'}
         </span>
-      )
-    },
-    {
-      header: 'Incharge Contact',
-      accessorKey: 'contact_person',
-      cell: (row) => (
-        <div style={{ fontSize: 'var(--text-xs)' }}>
-          <div style={{ fontWeight: 600 }}>{row.contact_person || '-'}</div>
-          <div style={{ color: 'var(--gray-500)' }}>{row.contact_mobile || ''}</div>
-        </div>
       )
     },
     {
@@ -82,8 +103,8 @@ export default function SubstationsPage() {
 
   return (
     <PageWrapper
-      title="Substations Directory"
-      subtitle="MSEB sub-stations and extra high voltage (EHV) depots."
+      title="Substations & Offices Directory"
+      subtitle="MSEB sub-stations, divisions, and EHV depots."
       actions={
         <Button variant="accent" icon={Plus} onClick={handleOpenAdd}>
           Add Substation

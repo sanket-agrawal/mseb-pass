@@ -16,42 +16,48 @@ export function useGatePass(initialFilters = {}) {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(initialFilters);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async () => {
     setLoading(true);
-    const data = getGatePasses(filters);
-    setPasses(data);
-    setLoading(false);
+    try {
+      const data = await getGatePasses(filters);
+      setPasses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching passes:', err);
+      setPasses([]);
+    } finally {
+      setLoading(false);
+    }
   }, [filters]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  const createGatePass = (data) => {
-    const created = createPassStore(data);
-    refresh();
+  const createGatePass = async (data) => {
+    const created = await createPassStore(data);
+    await refresh();
     return created;
   };
 
-  const updateGatePass = (id, data) => {
-    const updated = updatePassStore(id, data);
-    refresh();
+  const updateGatePass = async (id, data) => {
+    const updated = await updatePassStore(id, data);
+    await refresh();
     return updated;
   };
 
-  const updateStatus = (id, newStatus, remarks = '') => {
-    const updated = updateStatusStore(id, newStatus, remarks);
-    refresh();
+  const updateStatus = async (id, newStatus, remarks = '') => {
+    const updated = await updateStatusStore(id, newStatus, remarks);
+    await refresh();
     return updated;
   };
 
-  const deleteGatePass = (id) => {
-    deletePassStore(id);
-    refresh();
+  const deleteGatePass = async (id) => {
+    await deletePassStore(id);
+    await refresh();
   };
 
-  const getPass = (id) => {
-    return getGatePassById(id);
+  const getPass = async (id) => {
+    return await getGatePassById(id);
   };
 
   return {
@@ -60,6 +66,7 @@ export function useGatePass(initialFilters = {}) {
     filters,
     setFilters,
     refresh,
+    createPass: createGatePass,
     createGatePass,
     updateGatePass,
     updateStatus,

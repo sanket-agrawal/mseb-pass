@@ -7,7 +7,9 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { TRANSFORMER_CAPACITY } from '@/lib/constants';
-import { Plus, Trash2, Save, Send, ArrowLeft, Truck, Zap, User, FileText } from 'lucide-react';
+import { lookupCPF } from '@/lib/auth';
+import { assetAPI } from '@/lib/api';
+import { Plus, Trash2, Save, Send, ArrowLeft, Truck, Zap, User, FileText, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -58,11 +60,62 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
   });
 
   const [errors, setErrors] = useState({});
+  const [lookingUpCpf, setLookingUpCpf] = useState(false);
+
+  const handleCPFLookup = async () => {
+    if (!formData.line_staff_cpf) {
+      toast.error('Please enter a CPF number first');
+      return;
+    }
+    setLookingUpCpf(true);
+    try {
+      const official = await lookupCPF(formData.line_staff_cpf);
+      setFormData(prev => ({
+        ...prev,
+        line_staff_name: official.full_name || `${official.first_name || ''} ${official.last_name || ''}`.trim(),
+        line_staff_mobile: official.mobile || prev.line_staff_mobile,
+      }));
+      toast.success(`Found official: ${official.full_name} (${official.designation || 'Official'})`);
+    } catch (err) {
+      toast.error(err.message || 'Official not found for this CPF');
+    } finally {
+      setLookingUpCpf(false);
+    }
+  };
+
+  const handleDTCLookup = async (idx) => {
+    const dtc = formData.materials[idx]?.dtc_number;
+    if (!dtc) {
+      toast.error('Please enter a DTC or Serial Number first');
+      return;
+    }
+    try {
+      const asset = await assetAPI.lookupDTC(dtc);
+      if (asset) {
+        setFormData(prev => {
+          const updated = [...prev.materials];
+          updated[idx] = {
+            ...updated[idx],
+            make: asset.make || updated[idx].make,
+            serial_number: asset.serial_number || updated[idx].serial_number,
+            capacity: asset.capacity || updated[idx].capacity,
+            village_name: asset.village_name || updated[idx].village_name,
+            condition: asset.condition || updated[idx].condition,
+          };
+          return { ...prev, materials: updated };
+        });
+        toast.success(`DTC Found! Auto-filled ${asset.make || ''} ${asset.capacity || ''} (${asset.village_name || ''})`);
+      }
+    } catch (err) {
+      toast.error(err.message || 'No transformer found for this DTC number');
+    }
+  };
 
   // Auto-fill driver details when driver is selected
   const handleDriverChange = (e) => {
     const drvId = e.target.value;
-    const selected = drivers.find(d => d.id === drvId);
+    const driverList = Array.isArray(drivers) ? drivers : [];
+    const selected = driverList.find(d => d.id === drvId);
     if (selected) {
       setFormData(prev => ({
         ...prev,
@@ -79,7 +132,8 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
   // Auto-fill substation section & division when substation is selected
   const handleSubstationChange = (e) => {
     const subName = e.target.value;
-    const selected = substations.find(s => s.name === subName);
+    const subList = Array.isArray(substations) ? substations : [];
+    const selected = subList.find(s => s.name === subName);
     if (selected) {
       setFormData(prev => ({
         ...prev,
@@ -299,7 +353,7 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
             error={errors.destination_substation}
             value={formData.destination_substation}
             onChange={handleSubstationChange}
-            options={substations.map(s => ({ label: `${s.name} (${s.section})`, value: s.name }))}
+            options={(Array.isArray(substations) ? substations : []).map(s => ({ label: `${s.name} (${s.section || s.division || ''})`, value: s.name }))}
           />
 
           <Input
@@ -323,7 +377,7 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
             label="चालक निवडा (Select Driver)"
             value={formData.driver_id}
             onChange={handleDriverChange}
-            options={drivers.map(d => ({ label: `${d.name} (${d.vehicle_number})`, value: d.id }))}
+            options={(Array.isArray(drivers) ? drivers : []).map(d => ({ label: `${d.name} (${d.vehicle_number || ''})`, value: d.id }))}
             placeholder="Choose registered driver..."
           />
 
@@ -397,7 +451,7 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                 <Input
                   label="मेक (Make)"
                   required
@@ -438,12 +492,40 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
                   onChange={(e) => handleMaterialChange(idx, 'village_name', e.target.value)}
                 />
 
-                <Input
-                  label="DTC नं."
-                  placeholder="e.g. 4221318"
-                  value={mat.dtc_number}
-                  onChange={(e) => handleMaterialChange(idx, 'dtc_number', e.target.value)}
-                />
+                <div>
+                  <label style={{ display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-700)', marginBottom: '0.25rem' }}>
+                    DTC नं. (DTC Lookup)
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '0.5rem 0.75rem',
+                        fontSize: '0.875rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--gray-300)',
+                        backgroundColor: 'var(--bg-main)',
+                        color: 'var(--gray-900)'
+                      }}
+                      placeholder="e.g. 4220001"
+                      value={mat.dtc_number}
+                      onChange={(e) => handleMaterialChange(idx, 'dtc_number', e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      icon={Search}
+                      onClick={() => handleDTCLookup(idx)}
+                      style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                      title="Fetch DTC Details"
+                    >
+                      Fetch
+                    </Button>
+                  </div>
+                </div>
 
                 <Select
                   label="स्थिती (Condition)"
@@ -470,7 +552,7 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
 
       {/* Section 5 & 6: Line Staff & Sender Info */}
       <Card header="4. Destination Line Staff & Sender Verification">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
           <Input
             label="लाइन स्टाफ नांव (Destination Staff Name)"
             placeholder="e.g. Rohit Salunkhe"
@@ -484,11 +566,51 @@ export default function GatePassForm({ initialData = null, isEditMode = false, o
             onChange={(e) => setFormData(prev => ({ ...prev, line_staff_mobile: e.target.value }))}
           />
 
-          <Input
-            label="CPF / कर्मचारी क्रमांक (CPF No)"
-            value={formData.line_staff_cpf}
-            onChange={(e) => setFormData(prev => ({ ...prev, line_staff_cpf: e.target.value }))}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#334155' }}>
+              CPF / कर्मचारी क्रमांक (CPF No)
+            </label>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                type="text"
+                value={formData.line_staff_cpf}
+                onChange={(e) => setFormData(prev => ({ ...prev, line_staff_cpf: e.target.value }))}
+                placeholder="e.g. 100001"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid #cbd5e1',
+                  fontSize: 'var(--text-sm)',
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleCPFLookup}
+                disabled={lookingUpCpf}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: 'var(--primary-600)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Search style={{ width: 14, height: 14 }} />
+                {lookingUpCpf ? 'Checking...' : 'Lookup'}
+              </button>
+            </div>
+          </div>
 
           <Input
             label="देणाऱ्याची सही व नांव (Sender Name)"

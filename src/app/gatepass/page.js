@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GatePassTable from '@/components/gatepass/GatePassTable';
@@ -9,35 +9,53 @@ import StatusUpdateModal from '@/components/gatepass/StatusUpdateModal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
-import { useGatePass } from '@/hooks/useGatePass';
-import { exportGatePassesToExcel } from '@/lib/excelExport';
-import { Plus, Search, LayoutGrid, List, FileSpreadsheet } from 'lucide-react';
+import { gatePassAPI, exportAPI } from '@/lib/api';
+import { Plus, Search, LayoutGrid, List, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 export default function GatePassDirectoryPage() {
   const router = useRouter();
-  const { passes, loading, updateStatus } = useGatePass();
+  const [passes, setPasses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [viewMode, setViewMode] = useState('table');
   const [selectedPassForStatus, setSelectedPassForStatus] = useState(null);
 
+  useEffect(() => {
+    fetchPasses();
+  }, [activeTab, typeFilter]);
+
+  const fetchPasses = async () => {
+    setLoading(true);
+    try {
+      const filters = {};
+      if (activeTab !== 'all' && activeTab !== 'in_transit' && activeTab !== 'delivered') {
+        filters.type = activeTab;
+      }
+      if (activeTab === 'in_transit') filters.status = 'in_transit';
+      if (activeTab === 'delivered') filters.status = 'delivered';
+      if (typeFilter !== 'all') filters.type = typeFilter;
+      if (search) filters.search = search;
+
+      const res = await gatePassAPI.list(filters);
+      if (res && res.data) {
+        setPasses(res.data.gatepasses || res.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load gate passes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredPasses = passes.filter((p) => {
-    // Status tab filter
-    if (activeTab === 'outward' && p.type !== 'outward') return false;
-    if (activeTab === 'inward' && p.type !== 'inward') return false;
-    if (activeTab === 'in_transit' && p.status !== 'in_transit' && p.status !== 'return_in_transit') return false;
-    if (activeTab === 'delivered' && p.status !== 'delivered' && p.status !== 'completed') return false;
-
-    // Type filter dropdown
-    if (typeFilter !== 'all' && p.type !== typeFilter) return false;
-
-    // Search query filter
     if (search.trim()) {
       const q = search.toLowerCase();
-      const matchId = (p.id || '').toLowerCase().includes(q);
+      const matchId = (p.display_id || p.id || '').toLowerCase().includes(q);
       const matchSerial = String(p.serial_number || '').includes(q);
       const matchDriver = (p.driver_name || '').toLowerCase().includes(q);
       const matchSub = (p.destination_substation || '').toLowerCase().includes(q);
@@ -47,7 +65,6 @@ export default function GatePassDirectoryPage() {
       );
       return matchId || matchSerial || matchDriver || matchSub || matchMat;
     }
-
     return true;
   });
 
@@ -56,26 +73,32 @@ export default function GatePassDirectoryPage() {
   };
 
   const handleDownload = (pass) => {
-    toast.success(`Preparing PDF for ${pass.id}`);
+    toast.success(`Opening PDF preview for ${pass.display_id || pass.id}`);
   };
 
-  const handleStatusModalConfirm = (newStatus, remarks) => {
+  const handleStatusModalConfirm = async (newStatus, remarks) => {
     if (selectedPassForStatus) {
-      updateStatus(selectedPassForStatus.id, newStatus, remarks);
-      toast.success(`Updated ${selectedPassForStatus.id} status to ${newStatus}`);
-      setSelectedPassForStatus(null);
+      try {
+        await gatePassAPI.updateStatus(selectedPassForStatus.id, newStatus, remarks);
+        toast.success(`Updated ${selectedPassForStatus.display_id || selectedPassForStatus.id} status to ${newStatus}`);
+        setSelectedPassForStatus(null);
+        fetchPasses();
+      } catch (err) {
+        toast.error(err.message || 'Status update failed');
+      }
     }
   };
 
-  const handleExportFiltered = () => {
-    if (filteredPasses.length === 0) {
-      toast.error('No gate passes match the current filter criteria');
-      return;
-    }
-    toast.loading(`Exporting ${filteredPasses.length} records...`, { id: 'directory-export' });
+  const handleExportFiltered = async () => {
+    toast.loading(`Exporting gate passes...`, { id: 'directory-export' });
     try {
-      const filename = exportGatePassesToExcel(filteredPasses);
-      toast.success(`Exported to ${filename}`, { id: 'directory-export' });
+      const blob = await exportAPI.excel();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gatepasses-${Date.now()}.xlsx`;
+      a.click();
+      toast.success(`Exported Excel workbook successfully!`, { id: 'directory-export' });
     } catch (e) {
       toast.error('Failed to export to Excel', { id: 'directory-export' });
     }
@@ -88,7 +111,7 @@ export default function GatePassDirectoryPage() {
       actions={
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Button variant="outline" icon={FileSpreadsheet} onClick={handleExportFiltered}>
-            Export Filtered ({filteredPasses.length})
+            Export Excel ({filteredPasses.length})
           </Button>
           <Link href="/gatepass/new" style={{ textDecoration: 'none' }}>
             <Button variant="accent" icon={Plus}>
@@ -149,6 +172,10 @@ export default function GatePassDirectoryPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+
+            <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchPasses}>
+              Reload
+            </Button>
 
             <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
               <button

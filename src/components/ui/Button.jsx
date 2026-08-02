@@ -15,6 +15,7 @@ export default function Button({
   className = '',
   onClick,
   type = 'button',
+  style = {},
   ...props
 }) {
   const baseStyles = {
@@ -81,6 +82,7 @@ export default function Button({
     ...baseStyles,
     ...currentVariant,
     ...currentSize,
+    ...style,
   };
 
   return (

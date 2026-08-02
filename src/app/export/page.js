@@ -1,21 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import Table from '@/components/ui/Table';
-import { useGatePass } from '@/hooks/useGatePass';
-import { useDrivers } from '@/hooks/useDrivers';
-import { exportGatePassesToExcel } from '@/lib/excelExport';
-import { Download, Filter, FileSpreadsheet, CheckSquare } from 'lucide-react';
+import { gatePassAPI, officeAPI, driverAPI, exportAPI } from '@/lib/api';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function ExportPage() {
-  const { passes, loading } = useGatePass();
-  const { drivers, substations } = useDrivers();
+  const [passes, setPasses] = useState([]);
+  const [offices, setOffices] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -24,36 +24,58 @@ export default function ExportPage() {
   const [substationFilter, setSubstationFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');
 
-  const [sheetOptions, setSheetOptions] = useState({
-    includeMaterials: true,
-    includeSummary: true,
-    includeDrivers: true
-  });
-
   const [exporting, setExporting] = useState(false);
 
-  // Apply filters to dataset
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      const [passRes, officeRes, driverRes] = await Promise.all([
+        gatePassAPI.list(),
+        officeAPI.list(),
+        driverAPI.list(),
+      ]);
+      if (passRes?.data) setPasses(passRes.data.gatepasses || passRes.data || []);
+      if (officeRes?.data) setOffices(officeRes.data || []);
+      if (driverRes?.data) setDrivers(driverRes.data.drivers || driverRes.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load export data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredPasses = passes.filter(p => {
     if (dateFrom && p.date < dateFrom) return false;
     if (dateTo && p.date > dateTo) return false;
     if (statusFilter !== 'all' && p.status !== statusFilter) return false;
     if (typeFilter !== 'all' && p.type !== typeFilter) return false;
-    if (substationFilter !== 'all' && (p.destination_substation || p.toSubstation) !== substationFilter) return false;
-    if (driverFilter !== 'all' && (p.driver_name || p.driverName) !== driverFilter) return false;
+    if (substationFilter !== 'all' && (p.destination_substation) !== substationFilter) return false;
+    if (driverFilter !== 'all' && (p.driver_name) !== driverFilter) return false;
     return true;
   });
 
-  const handleExportClick = () => {
-    if (filteredPasses.length === 0) {
-      toast.error('No matching records found for the selected filters');
-      return;
-    }
-
+  const handleExportClick = async () => {
     setExporting(true);
-    toast.loading('Generating Excel workbook...', { id: 'export-toast' });
+    toast.loading('Generating Excel workbook from server...', { id: 'export-toast' });
     try {
-      const filename = exportGatePassesToExcel(filteredPasses, sheetOptions);
-      toast.success(`Exported ${filteredPasses.length} records to ${filename}`, { id: 'export-toast' });
+      const filters = {
+        from_date: dateFrom,
+        to_date: dateTo,
+        status: statusFilter,
+        type: typeFilter,
+      };
+      const blob = await exportAPI.excel(filters);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gatepasses-${Date.now()}.xlsx`;
+      a.click();
+      toast.success(`Exported Excel report successfully!`, { id: 'export-toast' });
     } catch (err) {
       console.error(err);
       toast.error('Failed to export Excel workbook', { id: 'export-toast' });
@@ -63,13 +85,12 @@ export default function ExportPage() {
   };
 
   const previewColumns = [
-    { header: 'GP ID', accessorKey: 'id', cell: (r) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{r.id}</span> },
-    { header: 'Date', accessorKey: 'date' },
+    { header: 'GP ID', accessorKey: 'display_id', cell: (r) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{r.display_id || r.id}</span> },
+    { header: 'Date', accessorKey: 'date', cell: (r) => <span>{r.date ? new Date(r.date).toISOString().split('T')[0] : ''}</span> },
     { header: 'Type', accessorKey: 'type', cell: (r) => <span>{r.type === 'outward' ? 'Outward जावक' : 'Inward आवक'}</span> },
-    { header: 'Recipient & Substation', accessorKey: 'destination_substation', cell: (r) => <span>{r.destination_substation || r.toSubstation}</span> },
-    { header: 'Driver', accessorKey: 'driver_name', cell: (r) => <span>{r.driver_name || r.driverName}</span> },
-    { header: 'Vehicle No.', accessorKey: 'vehicle_number', cell: (r) => <span style={{ fontFamily: 'var(--font-mono)' }}>{r.vehicle_number || r.vehicleNo}</span> },
-    { header: 'Capacity', accessorKey: 'capacity', cell: (r) => <strong>{r.materials?.[0]?.capacity || r.transformerCapacity || '-'}</strong> },
+    { header: 'Recipient & Substation', accessorKey: 'destination_substation', cell: (r) => <span>{r.destination_substation}</span> },
+    { header: 'Driver', accessorKey: 'driver_name', cell: (r) => <span>{r.driver_name || 'TBD'}</span> },
+    { header: 'Vehicle No.', accessorKey: 'vehicle_number', cell: (r) => <span style={{ fontFamily: 'var(--font-mono)' }}>{r.vehicle_number || 'TBD'}</span> },
     { header: 'Status', accessorKey: 'status' }
   ];
 
@@ -131,7 +152,7 @@ export default function ExportPage() {
             onChange={(e) => setSubstationFilter(e.target.value)}
             options={[
               { label: 'All Substations', value: 'all' },
-              ...substations.map(s => ({ label: s.name, value: s.name }))
+              ...offices.map(s => ({ label: s.name, value: s.name }))
             ]}
           />
 
@@ -147,56 +168,11 @@ export default function ExportPage() {
         </div>
       </Card>
 
-      {/* Sheet Customization Options */}
-      <Card header="2. Workbook Worksheets & Options" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={true}
-              disabled
-              style={{ width: 18, height: 18 }}
-            />
-            Sheet 1: Gate Passes Summary (Always Included)
-          </label>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={sheetOptions.includeMaterials}
-              onChange={(e) => setSheetOptions(prev => ({ ...prev, includeMaterials: e.target.checked }))}
-              style={{ width: 18, height: 18 }}
-            />
-            Sheet 2: Materials & Transformers Breakdown
-          </label>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={sheetOptions.includeSummary}
-              onChange={(e) => setSheetOptions(prev => ({ ...prev, includeSummary: e.target.checked }))}
-              style={{ width: 18, height: 18 }}
-            />
-            Sheet 3: Executive Metrics Summary
-          </label>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={sheetOptions.includeDrivers}
-              onChange={(e) => setSheetOptions(prev => ({ ...prev, includeDrivers: e.target.checked }))}
-              style={{ width: 18, height: 18 }}
-            />
-            Sheet 4: Driver Trips Leaderboard
-          </label>
-        </div>
-      </Card>
-
       {/* Live Preview Table */}
       <Card
         header={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>3. Export Record Preview</span>
+            <span>2. Export Record Preview</span>
             <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--primary-700)' }}>
               Matching Records: {filteredPasses.length}
             </span>

@@ -8,26 +8,37 @@ export function useDrivers() {
   const [substations, setSubstations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async () => {
     setLoading(true);
-    setDrivers(getDrivers());
-    setSubstations(getSubstations());
-    setLoading(false);
+    try {
+      const [dData, sData] = await Promise.all([
+        getDrivers(),
+        getSubstations(),
+      ]);
+      setDrivers(Array.isArray(dData) ? dData : []);
+      setSubstations(Array.isArray(sData) ? sData : []);
+    } catch (err) {
+      console.error('Error fetching drivers/substations:', err);
+      setDrivers([]);
+      setSubstations([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  const saveDriverData = (data) => {
-    const updated = saveDriver(data);
-    setDrivers(updated);
+  const saveDriverData = async (data) => {
+    const updated = await saveDriver(data);
+    await refresh();
     return updated;
   };
 
-  const saveSubstationData = (data) => {
-    const updated = saveSubstation(data);
-    setSubstations(updated);
+  const saveSubstationData = async (data) => {
+    const updated = await saveSubstation(data);
+    await refresh();
     return updated;
   };
 

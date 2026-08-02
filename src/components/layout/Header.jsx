@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Plus, Bell, User, Settings } from 'lucide-react';
+import { Search, Plus, User } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { getAuthUser } from '@/lib/auth';
 
@@ -13,7 +13,7 @@ const getTitleFromPath = (path) => {
   if (path === '/gatepass/new') return 'Issue New Pass';
   if (path.startsWith('/gatepass/')) return 'Pass Details';
   if (path === '/drivers') return 'Drivers';
-  if (path === '/substations') return 'Substations';
+  if (path === '/substations') return 'Substations / Offices';
   if (path === '/export') return 'Excel Export';
   if (path === '/settings') return 'System Settings';
   if (path === '/login') return 'Login';
@@ -29,6 +29,8 @@ export default function Header() {
     setUser(getAuthUser());
   }, []);
 
+  const displayName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'User' : 'Official';
+
   return (
     <header className="app-header">
       {/* Title */}
@@ -40,25 +42,6 @@ export default function Header() {
 
       {/* Actions & Profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {/* Search Input Bar (Hidden on small screens < 640px) */}
-        <div className="header-search-bar" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <Search style={{ width: 15, height: 15, color: 'var(--gray-400)', position: 'absolute', left: 10, pointerEvents: 'none' }} />
-          <input
-            type="text"
-            placeholder="Search..."
-            style={{
-              padding: '6px 10px 6px 32px',
-              fontSize: 'var(--text-xs)',
-              borderRadius: 'var(--radius-full)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--gray-50)',
-              outline: 'none',
-              width: 160,
-              transition: 'all 0.2s ease'
-            }}
-          />
-        </div>
-
         {/* Quick Action Button */}
         {pathname !== '/gatepass/new' && (
           <Link href="/gatepass/new" style={{ textDecoration: 'none' }}>
@@ -96,10 +79,10 @@ export default function Header() {
                 fontWeight: 700
               }}
             >
-              {user?.name?.[0] || <User style={{ width: 13, height: 13 }} />}
+              {displayName[0] || <User style={{ width: 13, height: 13 }} />}
             </div>
             <span className="header-user-name" style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-800)', paddingRight: 2 }}>
-              {user?.name?.split(' ')[0] || 'Admin'}
+              {displayName}
             </span>
           </div>
         </Link>

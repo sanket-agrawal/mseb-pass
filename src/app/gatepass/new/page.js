@@ -21,10 +21,11 @@ function GatePassNewFormContent() {
 
   const linkedPass = linkedId ? getPass(linkedId) : null;
 
-  const handleFormSubmit = (formData) => {
+  const handleFormSubmit = async (formData) => {
     try {
-      const newPass = createPass(formData);
-      toast.success(`Gate Pass ${newPass.id} created successfully!`);
+      toast.loading('Creating digital gate pass...', { id: 'create-pass-toast' });
+      const newPass = await createPass(formData);
+      toast.success(`Gate Pass ${newPass.display_id || newPass.id} created successfully!`, { id: 'create-pass-toast' });
 
       // Trigger auto-share prompt toast for WhatsApp
       toast.custom((t) => (
@@ -43,10 +44,10 @@ function GatePassNewFormContent() {
         >
           <div>
             <strong style={{ fontSize: '13px', color: 'var(--gray-900)' }}>
-              Pass #{newPass.serial_number} Issued!
+              Pass #{newPass.display_id || newPass.serial_number} Issued!
             </strong>
             <p style={{ fontSize: '11px', color: 'var(--gray-600)', margin: 0 }}>
-              Send pass details to driver {newPass.driver_name} via WhatsApp?
+              Send pass details to driver {newPass.driver_name || 'Driver'} via WhatsApp?
             </p>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -94,7 +95,7 @@ function GatePassNewFormContent() {
       router.push(`/gatepass/${newPass.id}`);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to create gate pass');
+      toast.error(error.message || 'Failed to create gate pass', { id: 'create-pass-toast' });
     }
   };
 
@@ -111,7 +112,7 @@ export default function NewGatePassPage() {
   return (
     <PageWrapper
       title="Issue Digital Gate Pass"
-      subtitle="Fill in transport and transformer details matching the MSEB physical yellow pass form."
+      subtitle="Fill in transport and transformer details matching the MSEDCL physical yellow pass form."
       actions={
         <Link href="/gatepass" style={{ textDecoration: 'none' }}>
           <Button variant="outline" icon={ArrowLeft}>

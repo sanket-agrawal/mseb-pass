@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -14,7 +14,7 @@ import {
   LogOut,
   Zap
 } from 'lucide-react';
-import { logoutUser } from '@/lib/auth';
+import { logoutUser, getAuthUser } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 
 const navItems = [
@@ -22,7 +22,7 @@ const navItems = [
   { label: 'Gate Passes', href: '/gatepass', icon: FileText },
   { label: 'Issue New Pass', href: '/gatepass/new', icon: PlusCircle },
   { label: 'Drivers', href: '/drivers', icon: Truck },
-  { label: 'Substations', href: '/substations', icon: Building2 },
+  { label: 'Substations & Offices', href: '/substations', icon: Building2 },
   { label: 'Excel Export', href: '/export', icon: FileSpreadsheet },
   { label: 'Settings', href: '/settings', icon: Settings },
 ];
@@ -30,12 +30,19 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [user, setUser] = useState(null);
 
-  const handleLogout = () => {
-    logoutUser();
+  useEffect(() => {
+    setUser(getAuthUser());
+  }, []);
+
+  const handleLogout = async () => {
+    await logoutUser();
     toast.success('Logged out successfully');
     router.push('/login');
   };
+
+  const officeName = user?.office?.name || user?.branch || 'MSEDCL Division';
 
   return (
     <aside className="app-sidebar">
@@ -49,7 +56,7 @@ export default function Sidebar() {
             MSEB Gate Pass
           </span>
           <span style={{ fontSize: '10px', color: 'var(--gray-400)', fontWeight: 600 }}>
-            Sub Division Dondaicha
+            {officeName}
           </span>
         </div>
       </div>
@@ -101,7 +108,7 @@ export default function Sidebar() {
 
         <div style={{ fontSize: '10px', color: 'var(--gray-400)', textAlign: 'center' }}>
           <div>MSEB Digital Initiative v1.0</div>
-          <div style={{ color: 'var(--accent-400)', marginTop: 2 }}>MSEDCL Dondaicha</div>
+          <div style={{ color: 'var(--accent-400)', marginTop: 2 }}>{officeName}</div>
         </div>
       </div>
     </aside>

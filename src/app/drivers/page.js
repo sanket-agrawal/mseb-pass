@@ -1,19 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import DriverModal from '@/components/drivers/DriverModal';
-import { useDrivers } from '@/hooks/useDrivers';
-import { Users, Plus, Phone, Edit, UserCheck, UserX } from 'lucide-react';
+import { driverAPI } from '@/lib/api';
+import { Users, Plus, Phone, Edit } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function DriversPage() {
-  const { drivers, loading, saveDriver } = useDrivers();
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const fetchDrivers = async () => {
+    setLoading(true);
+    try {
+      const res = await driverAPI.list();
+      if (res && res.data) {
+        setDrivers(res.data.drivers || res.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load drivers');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenAdd = () => {
     setSelectedDriver(null);
@@ -25,9 +45,20 @@ export default function DriversPage() {
     setModalOpen(true);
   };
 
-  const handleSaveDriver = (formData) => {
-    saveDriver(formData);
-    toast.success(formData.id ? 'Driver updated successfully' : 'New driver registered successfully');
+  const handleSaveDriver = async (formData) => {
+    try {
+      if (formData.id) {
+        await driverAPI.update(formData.id, formData);
+        toast.success('Driver updated successfully');
+      } else {
+        await driverAPI.create(formData);
+        toast.success('New driver registered successfully');
+      }
+      setModalOpen(false);
+      fetchDrivers();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save driver');
+    }
   };
 
   const columns = [
@@ -55,7 +86,7 @@ export default function DriversPage() {
       accessorKey: 'vehicle_number',
       cell: (row) => (
         <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--primary-700)' }}>
-          {row.vehicle_number || row.vehicleNo}
+          {row.vehicle_number || row.vehicleNo || 'N/A'}
         </div>
       )
     },
@@ -65,15 +96,6 @@ export default function DriversPage() {
       cell: (row) => (
         <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontFamily: 'var(--font-mono)' }}>
           {row.license_number || row.licenseNo || '-'}
-        </span>
-      )
-    },
-    {
-      header: 'Total Trips',
-      accessorKey: 'total_trips',
-      cell: (row) => (
-        <span style={{ fontWeight: 700, color: 'var(--accent-600)' }}>
-          {row.total_trips || 0} trips
         </span>
       )
     },

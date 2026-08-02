@@ -6,7 +6,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import { shareViaWhatsApp, copyPassLinkToClipboard, getPublicGatePassUrl, formatWhatsAppMessage } from '@/lib/shareService';
-import { addShareLog } from '@/store/gatepassStore';
+import { shareAPI } from '@/lib/api';
 import { Mail, Copy, Send, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -30,24 +30,19 @@ export default function ShareModal({ isOpen, onClose, pass }) {
   const publicUrl = getPublicGatePassUrl(pass);
   const waPreviewText = formatWhatsAppMessage(pass, publicUrl);
 
-  const handleWhatsAppSend = () => {
+  const handleWhatsAppSend = async () => {
+    try {
+      await shareAPI.share(pass.id, 'whatsapp', phoneNumber || pass.driver_mobile || 'Driver');
+    } catch (e) {
+      console.warn('Share API log error:', e);
+    }
     shareViaWhatsApp(pass, phoneNumber);
-    addShareLog(pass.id, {
-      method: 'whatsapp',
-      recipient: phoneNumber || pass.driver_mobile || 'Driver',
-      shared_by: 'Admin'
-    });
-    toast.success('Opened WhatsApp with pass details!', { icon: '📱' });
+    toast.success('Queued WhatsApp notification & opened app!', { icon: '📱' });
     onClose();
   };
 
   const handleCopyLink = async () => {
     await copyPassLinkToClipboard(pass);
-    addShareLog(pass.id, {
-      method: 'link',
-      recipient: 'Direct Link Copied',
-      shared_by: 'Admin'
-    });
     setCopied(true);
     toast.success('Public view link copied to clipboard!', { icon: '🔗' });
     setTimeout(() => setCopied(false), 2000);
@@ -60,39 +55,21 @@ export default function ShareModal({ isOpen, onClose, pass }) {
     }
 
     setSendingEmail(true);
-    toast.loading('Sending email...', { id: 'email-toast' });
+    toast.loading('Queueing email notification...', { id: 'email-toast' });
     try {
-      const res = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gatePass: pass,
-          recipientEmail: email,
-          recipientName
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send email');
-
-      addShareLog(pass.id, {
-        method: 'email',
-        recipient: email,
-        shared_by: 'Admin'
-      });
-
-      toast.success(`Email sent to ${email}!`, { id: 'email-toast', icon: '📧' });
+      await shareAPI.share(pass.id, 'email', email);
+      toast.success(`Email queued to ${email}!`, { id: 'email-toast', icon: '📧' });
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to send email. Please try again.', { id: 'email-toast' });
+      toast.error('Failed to queue email notification.', { id: 'email-toast' });
     } finally {
       setSendingEmail(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Share Gate Pass: ${pass.id}`} size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Share Gate Pass: ${pass.display_id || pass.id}`} size="md">
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '1.25rem' }}>
         <button
@@ -166,11 +143,11 @@ export default function ShareModal({ isOpen, onClose, pass }) {
       {activeTab === 'whatsapp' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <Input
-            label="Driver Mobile Number (WhatsApp)"
+            label="Driver / Recipient Mobile Number"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
             placeholder="9876543210"
-            helperText="Driver's 10-digit mobile number"
+            helperText="Enter 10-digit mobile number for WhatsApp notification"
           />
 
           <div>
@@ -209,7 +186,7 @@ export default function ShareModal({ isOpen, onClose, pass }) {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="ae.shindkheda@mseb.com"
+            placeholder="ae.substation@mseb.com"
           />
 
           <Input
@@ -220,7 +197,7 @@ export default function ShareModal({ isOpen, onClose, pass }) {
           />
 
           <Button variant="primary" icon={Send} loading={sendingEmail} fullWidth onClick={handleSendEmail}>
-            Send Email
+            Send Email Notification
           </Button>
         </div>
       )}

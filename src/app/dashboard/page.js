@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import PageWrapper from '@/components/layout/PageWrapper';
 import StatsCard from '@/components/dashboard/StatsCard';
@@ -12,8 +12,9 @@ import DateRangeSelector from '@/components/ui/DateRangeSelector';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useGatePass } from '@/hooks/useGatePass';
+import { dashboardAPI, exportAPI } from '@/lib/api';
+import { getAuthUser } from '@/lib/auth';
 import { computeStats } from '@/lib/analytics';
-import { exportGatePassesToExcel } from '@/lib/excelExport';
 import {
   FileText,
   Truck,
@@ -22,9 +23,6 @@ import {
   Plus,
   Download,
   RefreshCw,
-  Building2,
-  TrendingUp,
-  UserCheck
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -33,32 +31,68 @@ export default function DashboardPage() {
   const router = useRouter();
   const { passes, loading, refresh } = useGatePass();
   const [datePreset, setDatePreset] = useState('all');
+  const [liveStats, setLiveStats] = useState(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    setUser(getAuthUser());
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const res = await dashboardAPI.stats();
+      if (res && res.data) {
+        setLiveStats(res.data);
+      }
+    } catch (e) {
+      console.warn('Dashboard stats fallback to local analytics:', e);
+    }
+  };
 
   const stats = useMemo(() => {
-    return computeStats(passes, datePreset);
-  }, [passes, datePreset]);
+    const computed = computeStats(passes, datePreset);
+    if (liveStats) {
+      return {
+        ...computed,
+        total: liveStats.total ?? computed.total,
+        activeInTransit: liveStats.in_transit ?? computed.activeInTransit,
+        pendingReturns: liveStats.pending_returns ?? computed.pendingReturns,
+        completedCount: liveStats.completed ?? computed.completedCount,
+        recentPasses: liveStats.recent_passes?.length ? liveStats.recent_passes : computed.recentPasses,
+      };
+    }
+    return computed;
+  }, [passes, datePreset, liveStats]);
 
   const handleView = (pass) => {
     router.push(`/gatepass/${pass.id}`);
   };
 
   const handleDownloadPdf = (pass) => {
-    toast.success(`Preparing PDF for ${pass.id}`);
+    toast.success(`Opening PDF preview for ${pass.display_id || pass.id}`);
   };
 
-  const handleQuickExport = () => {
-    toast.loading('Generating Excel file...', { id: 'dash-export' });
+  const handleQuickExport = async () => {
+    toast.loading('Generating Excel report...', { id: 'dash-export' });
     try {
-      exportGatePassesToExcel(passes);
-      toast.success('Excel workbook exported successfully!', { id: 'dash-export' });
+      const blob = await exportAPI.excel();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gatepasses-${Date.now()}.xlsx`;
+      a.click();
+      toast.success('Excel exported successfully!', { id: 'dash-export' });
     } catch (e) {
       toast.error('Export failed', { id: 'dash-export' });
     }
   };
 
+  const officeTitle = user?.office?.name || user?.branch || 'MSEDCL Digital Gate Pass';
+
   return (
     <PageWrapper
-      title="MSEB Sub Division Dondaicha"
+      title={officeTitle}
       subtitle="Executive management information dashboard & transformer movement analytics."
       actions={
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -81,12 +115,12 @@ export default function DashboardPage() {
           justifyContent: 'space-between',
           marginBottom: '1.5rem',
           flexWrap: 'wrap',
-          gap: '1rem'
+          gap: '1rem',
         }}
       >
         <DateRangeSelector value={datePreset} onChange={setDatePreset} />
 
-        <Button variant="ghost" size="sm" icon={RefreshCw} onClick={refresh}>
+        <Button variant="ghost" size="sm" icon={RefreshCw} onClick={() => { refresh(); fetchStats(); }}>
           Refresh Analytics
         </Button>
       </div>
@@ -97,7 +131,7 @@ export default function DashboardPage() {
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '1.25rem',
-          marginBottom: '1.75rem'
+          marginBottom: '1.75rem',
         }}
       >
         <StatsCard
