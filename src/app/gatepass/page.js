@@ -12,10 +12,11 @@ import Card from '@/components/ui/Card';
 import { gatePassAPI, exportAPI } from '@/lib/api';
 import { Plus, Search, LayoutGrid, List, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { getAuthUser, canCreateGatePass } from '@/lib/auth';
 
 export default function GatePassDirectoryPage() {
   const router = useRouter();
+  const [user, setUser] = useState(null);
   const [passes, setPasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -25,6 +26,7 @@ export default function GatePassDirectoryPage() {
   const [selectedPassForStatus, setSelectedPassForStatus] = useState(null);
 
   useEffect(() => {
+    setUser(getAuthUser());
     fetchPasses();
   }, [activeTab, typeFilter]);
 
@@ -113,11 +115,13 @@ export default function GatePassDirectoryPage() {
           <Button variant="outline" icon={FileSpreadsheet} onClick={handleExportFiltered}>
             Export Excel ({filteredPasses.length})
           </Button>
-          <Link href="/gatepass/new" style={{ textDecoration: 'none' }}>
-            <Button variant="accent" icon={Plus}>
-              New Gate Pass
-            </Button>
-          </Link>
+          {canCreateGatePass(user) && (
+            <Link href="/gatepass/new" style={{ textDecoration: 'none' }}>
+              <Button variant="accent" icon={Plus}>
+                New Gate Pass
+              </Button>
+            </Link>
+          )}
         </div>
       }
     >

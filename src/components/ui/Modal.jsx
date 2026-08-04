@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export default function Modal({
@@ -11,6 +12,12 @@ export default function Modal({
   footer,
   size = 'md' // sm | md | lg | xl
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen) {
@@ -27,7 +34,7 @@ export default function Modal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const sizeMap = {
     sm: '400px',
@@ -36,16 +43,19 @@ export default function Modal({
     xl: '900px'
   };
 
-  return (
+  const modalContent = (
     <div
       style={{
         position: 'fixed',
-        inset: 0,
-        zIndex: 50,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 5000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(15, 23, 42, 0.55)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
         backdropFilter: 'blur(4px)',
         padding: '1rem',
         animation: 'fadeIn 0.2s ease-out'
@@ -56,10 +66,10 @@ export default function Modal({
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-xl)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
           width: '100%',
           maxWidth: sizeMap[size] || sizeMap.md,
-          maxHeight: '90vh',
+          maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -75,14 +85,16 @@ export default function Modal({
             borderBottom: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            gap: '12px'
           }}
         >
-          <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--gray-900)' }}>
+          <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--gray-900)', margin: 0, lineHeight: 1.3 }}>
             {title}
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close"
             style={{
               background: 'none',
               border: 'none',
@@ -92,7 +104,8 @@ export default function Modal({
               borderRadius: 'var(--radius-md)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              flexShrink: 0
             }}
           >
             <X style={{ width: 20, height: 20 }} />
@@ -118,6 +131,7 @@ export default function Modal({
               borderTop: '1px solid var(--border-color)',
               backgroundColor: 'var(--gray-50)',
               display: 'flex',
+              alignItems: 'center',
               justifyContent: 'flex-end',
               gap: '12px'
             }}
@@ -128,4 +142,6 @@ export default function Modal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

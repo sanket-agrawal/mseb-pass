@@ -13,7 +13,21 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <AppLayoutWrapper>{children}</AppLayoutWrapper>
-        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+        <Toaster
+          position="top-right"
+          containerStyle={{ zIndex: 999999, top: 20, right: 20 }}
+          toastOptions={{
+            duration: 4500,
+            style: {
+              zIndex: 999999,
+              maxWidth: '450px',
+              wordBreak: 'break-word',
+              fontSize: '13px',
+              fontWeight: 600,
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
+            },
+          }}
+        />
       </body>
     </html>
   );

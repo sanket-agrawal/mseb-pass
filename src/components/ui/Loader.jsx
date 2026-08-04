@@ -15,13 +15,16 @@ export default function Loader({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2rem',
+          padding: '2.5rem 1.5rem',
           gap: '12px',
-          color: 'var(--primary-600)'
+          width: '100%',
+          minHeight: '180px',
+          color: 'var(--primary-600)',
+          textAlign: 'center'
         }}
       >
-        <Loader2 style={{ width: 32, height: 32, animation: 'spin 1s linear infinite' }} />
-        {text && <span style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)' }}>{text}</span>}
+        <Loader2 style={{ width: 32, height: 32, animation: 'spin 1s linear infinite', shrink: 0 }} />
+        {text && <span style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)', fontWeight: 500 }}>{text}</span>}
       </div>
     );
   }

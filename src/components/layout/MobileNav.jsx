@@ -9,7 +9,7 @@ const mobileNavItems = [
   { label: 'Home', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Passes', href: '/gatepass', icon: FileText },
   { label: 'New', href: '/gatepass/new', icon: PlusCircle },
-  { label: 'Drivers', href: '/drivers', icon: Users },
+  { label: 'Contractors', href: '/contractors', icon: Users },
   { label: 'Export', href: '/export', icon: Download },
 ];
 

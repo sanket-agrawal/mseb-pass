@@ -6,19 +6,25 @@ import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import SubstationModal from '@/components/substations/SubstationModal';
-import { officeAPI } from '@/lib/api';
-import { Building2, Plus, Edit } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { getAuthUser, canManageStations } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 export default function SubstationsPage() {
+  const router = useRouter();
   const [substations, setSubstations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedSubstation, setSelectedSubstation] = useState(null);
 
   useEffect(() => {
+    const authUser = getAuthUser();
+    if (authUser && !canManageStations(authUser)) {
+      toast.error('Access restricted to Admin or Super Admin role');
+      router.push('/dashboard');
+      return;
+    }
     fetchOffices();
-  }, []);
+  }, [router]);
 
   const fetchOffices = async () => {
     setLoading(true);

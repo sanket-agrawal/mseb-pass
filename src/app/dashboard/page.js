@@ -227,9 +227,9 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Driver Performance Leaderboard */}
-      <Card header="Driver Performance Leaderboard (चालक कामगिरी)">
-        <HorizontalBar data={stats.driverPerformance} />
+      {/* Contractor Performance Leaderboard */}
+      <Card header="Contractor Performance Leaderboard (ठेकेदार कामगिरी व गेट पास नोंद)">
+        <HorizontalBar data={stats.contractorPerformance || stats.driverPerformance} />
       </Card>
     </PageWrapper>
   );

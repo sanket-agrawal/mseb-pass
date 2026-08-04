@@ -48,16 +48,16 @@ export default function SettingsPage() {
   return (
     <PageWrapper
       title="System Settings & Admin Profile"
-      subtitle="Manage organization branding, default PDF remarks, cloud database sync, and data cache."
+      subtitle="Manage organization branding, default PDF remarks, and system preferences."
       actions={
         <Button variant="danger" icon={LogOut} onClick={handleLogout}>
           Sign Out
         </Button>
       }
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ marginBottom: '1.5rem' }}>
         {/* Admin Profile Card */}
-        <Card header="Admin User Profile">
+        <Card header="User Profile & Station Information">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'var(--primary-600)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
@@ -68,37 +68,16 @@ export default function SettingsPage() {
                   {user?.name || 'MSEB Admin'}
                 </h3>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                  {user?.email || 'admin@mseb.com'} • <strong style={{ color: 'var(--primary-700)' }}>Administrator</strong>
+                  {user?.email || 'admin@mseb.com'} • <strong style={{ color: 'var(--primary-700)' }}>{user?.designation || 'Official'}</strong>
                 </span>
               </div>
             </div>
 
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-700)', borderTop: '1px solid var(--border-color)', paddingTop: 10 }}>
-              <div><strong>Branch:</strong> Sub Division Dondaicha (दोंडाईचा)</div>
+              <div><strong>Branch / Office:</strong> {user?.office?.name || 'Sub Division Dondaicha (दोंडाईचा)'}</div>
               <div><strong>Circle/Division:</strong> Dhule Circle</div>
-              <div><strong>Last Login:</strong> {user?.loginTime ? new Date(user.loginTime).toLocaleString() : 'Active session'}</div>
+              <div><strong>Active Session:</strong> {user?.loginTime ? new Date(user.loginTime).toLocaleString() : 'Authenticated'}</div>
             </div>
-          </div>
-        </Card>
-
-        {/* Cloud Sync Status Card */}
-        <Card header="Cloud Sync & Database Engine">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Database style={{ width: 24, height: 24, color: isSupabaseConfigured() ? 'var(--success-600)' : 'var(--warning-600)' }} />
-              <div>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--gray-900)' }}>
-                  {isSupabaseConfigured() ? 'Supabase Cloud Connected' : 'Local Storage Mode Active'}
-                </div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                  {isSupabaseConfigured() ? 'Real-time PostgreSQL cloud persistence' : 'Offline seed & client cache active for demonstration'}
-                </div>
-              </div>
-            </div>
-
-            <Button variant="outline" size="sm" icon={RefreshCw} onClick={handleResetSeedData}>
-              Reload 15+ Seed Gate Passes
-            </Button>
           </div>
         </Card>
       </div>

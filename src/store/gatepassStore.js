@@ -49,7 +49,9 @@ export async function updateGatePass(id, updatedFields) {
       const res = await gatePassAPI.addVehicle(id, updatedFields);
       return res?.data || null;
     }
-    return null;
+    // General field updates (e.g., office IDs, vendor, etc.)
+    const res = await gatePassAPI.update(id, updatedFields);
+    return res?.data || null;
   } catch (err) {
     console.error(`Error updating gate pass ${id}:`, err);
     throw err;

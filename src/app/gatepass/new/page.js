@@ -1,16 +1,18 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GatePassForm from '@/components/gatepass/GatePassForm';
 import Loader from '@/components/ui/Loader';
 import { useGatePass } from '@/hooks/useGatePass';
 import { shareViaWhatsApp } from '@/lib/shareService';
 import { addShareLog } from '@/store/gatepassStore';
-import { ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getAuthUser, canCreateGatePass } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 
 function GatePassNewFormContent() {
@@ -18,10 +20,20 @@ function GatePassNewFormContent() {
   const searchParams = useSearchParams();
   const linkedId = searchParams.get('linked_id');
   const { createPass, getPass } = useGatePass();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const linkedPass = linkedId ? getPass(linkedId) : null;
 
+  useEffect(() => {
+    const authUser = getAuthUser();
+    if (authUser && !canCreateGatePass(authUser)) {
+      toast.error('Access denied. Creating gate pass requires Gate Pass Creator or Super Admin role');
+      router.push('/gatepass');
+    }
+  }, [router]);
+
   const handleFormSubmit = async (formData) => {
+    setIsSubmitting(true);
     try {
       toast.loading('Creating digital gate pass...', { id: 'create-pass-toast' });
       const newPass = await createPass(formData);
@@ -47,7 +59,7 @@ function GatePassNewFormContent() {
               Pass #{newPass.display_id || newPass.serial_number} Issued!
             </strong>
             <p style={{ fontSize: '11px', color: 'var(--gray-600)', margin: 0 }}>
-              Send pass details to driver {newPass.driver_name || 'Driver'} via WhatsApp?
+              Send pass details to contractor/driver via WhatsApp?
             </p>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -56,7 +68,7 @@ function GatePassNewFormContent() {
                 shareViaWhatsApp(newPass, newPass.driver_mobile);
                 addShareLog(newPass.id, {
                   method: 'whatsapp',
-                  recipient: newPass.driver_mobile || 'Driver',
+                  recipient: newPass.driver_mobile || 'Contractor/Driver',
                   shared_by: 'Admin'
                 });
                 toast.dismiss(t.id);
@@ -96,15 +108,86 @@ function GatePassNewFormContent() {
     } catch (error) {
       console.error(error);
       toast.error(error.message || 'Failed to create gate pass', { id: 'create-pass-toast' });
+      setIsSubmitting(false);
     }
   };
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <GatePassForm
-      onSubmit={handleFormSubmit}
-      linkedPass={linkedPass}
-      onCancel={() => router.push('/gatepass')}
-    />
+    <>
+      {isSubmitting && mounted && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 1000000,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            color: '#ffffff',
+          }}
+        >
+          <div
+            style={{
+              padding: '2.25rem 2.5rem',
+              borderRadius: '16px',
+              backgroundColor: '#ffffff',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+              maxWidth: '380px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                backgroundColor: '#eff6ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#4f46e5',
+              }}
+            >
+              <Loader2 style={{ width: 34, height: 34, animation: 'spin 1s linear infinite' }} />
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                Creating Gate Pass...
+              </h3>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+                Generating digital serial number, saving job records, & syncing with MSEDCL database.
+              </p>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      <GatePassForm
+        onSubmit={handleFormSubmit}
+        linkedPass={linkedPass}
+        isSubmitting={isSubmitting}
+        onCancel={() => router.push('/gatepass')}
+      />
+    </>
   );
 }
 

@@ -77,7 +77,27 @@ async function tryRefreshToken(): Promise<boolean> {
 async function parseError(res: Response): Promise<Error> {
   try {
     const data = await res.json();
-    return new Error(data.message || 'Request failed');
+    let message = data.message || 'Request failed';
+
+    // Format Zod / API validation errors
+    if (Array.isArray(data.errors) && data.errors.length > 0) {
+      const details = data.errors.map((e: any) => {
+        const fieldName = e.field ? e.field.replace(/^body\./, '') : '';
+        return fieldName ? `${fieldName}: ${e.message}` : e.message;
+      }).join(' • ');
+      message = `${message}: ${details}`;
+    } 
+    // Format Prisma duplicate / constraint field errors
+    else if (data.field) {
+      const fields = Array.isArray(data.field) ? data.field.join(', ') : String(data.field);
+      message = `${message} (${fields})`;
+    }
+
+    const err = new Error(message);
+    (err as any).data = data;
+    (err as any).errors = data.errors;
+    (err as any).field = data.field;
+    return err;
   } catch {
     return new Error(`HTTP ${res.status}: ${res.statusText}`);
   }
@@ -128,14 +148,46 @@ export const gatePassAPI = {
 
   getAudit: (id: string) => request(`/gatepasses/${id}/audit`),
 
+  update: (id: string, data: any) =>
+    request(`/gatepasses/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
   getPublic: (id: string) => request(`/gatepasses/public/${id}`),
 };
 
 // ─── Driver API ─────────────────────────────────
 export const driverAPI = {
-  list: (search?: string) => request(`/drivers${search ? `?search=${search}` : ''}`),
+  list: (param?: string | Record<string, any>) => {
+    if (!param) return request('/drivers');
+    if (typeof param === 'string') {
+      return request(`/drivers?search=${encodeURIComponent(param)}`);
+    }
+    const params = new URLSearchParams();
+    Object.entries(param).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    });
+    const qs = params.toString();
+    return request(`/drivers${qs ? `?${qs}` : ''}`);
+  },
   create: (data: any) => request('/drivers', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => request(`/drivers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+};
+
+// ─── Contractor API ─────────────────────────────
+export const contractorAPI = {
+  list: (param?: string | Record<string, any>) => {
+    if (!param) return request('/contractors');
+    if (typeof param === 'string') {
+      return request(`/contractors?search=${encodeURIComponent(param)}`);
+    }
+    const params = new URLSearchParams();
+    Object.entries(param).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    });
+    const qs = params.toString();
+    return request(`/contractors${qs ? `?${qs}` : ''}`);
+  },
+  create: (data: any) => request('/contractors', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => request(`/contractors/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // ─── Office API ─────────────────────────────────
@@ -161,6 +213,7 @@ export const assetAPI = {
 
 // ─── User API ───────────────────────────────────
 export const userAPI = {
+  getRoles: () => request('/users/roles'),
   list: (filters: Record<string, any> = {}) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, String(v)); });
@@ -169,6 +222,7 @@ export const userAPI = {
   create: (data: any) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deactivate: (id: string) => request(`/users/${id}/deactivate`, { method: 'PATCH' }),
+  bulkImport: (users: any[]) => request('/users/bulk', { method: 'POST', body: JSON.stringify({ users }) }),
 };
 
 // ─── Dashboard API ──────────────────────────────

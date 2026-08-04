@@ -11,30 +11,30 @@ import {
   Building2,
   FileSpreadsheet,
   Settings,
+  Users,
+  Boxes,
   LogOut,
   Zap
 } from 'lucide-react';
-import { logoutUser, getAuthUser } from '@/lib/auth';
+import {
+  logoutUser,
+  getAuthUser,
+  canCreateGatePass,
+  canManageContractors,
+  canManageStations,
+  canManageUsers,
+  canManageAssets
+} from '@/lib/auth';
 import { toast } from 'react-hot-toast';
-
-const navItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Gate Passes', href: '/gatepass', icon: FileText },
-  { label: 'Issue New Pass', href: '/gatepass/new', icon: PlusCircle },
-  { label: 'Drivers', href: '/drivers', icon: Truck },
-  { label: 'Substations & Offices', href: '/substations', icon: Building2 },
-  { label: 'Excel Export', href: '/export', icon: FileSpreadsheet },
-  { label: 'Settings', href: '/settings', icon: Settings },
-];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => getAuthUser());
 
   useEffect(() => {
     setUser(getAuthUser());
-  }, []);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await logoutUser();
@@ -43,6 +43,18 @@ export default function Sidebar() {
   };
 
   const officeName = user?.office?.name || user?.branch || 'MSEDCL Division';
+
+  const navItems = [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, show: true },
+    { label: 'Gate Passes', href: '/gatepass', icon: FileText, show: true },
+    { label: 'Issue New Pass', href: '/gatepass/new', icon: PlusCircle, show: canCreateGatePass(user) },
+    { label: 'Asset Management', href: '/assets', icon: Boxes, show: canManageAssets(user) },
+    { label: 'Contractors', href: '/contractors', icon: Truck, show: canManageContractors(user) },
+    { label: 'Substations & Offices', href: '/substations', icon: Building2, show: canManageStations(user) },
+    { label: 'User Management', href: '/users', icon: Users, show: canManageUsers(user) },
+    { label: 'Excel Export', href: '/export', icon: FileSpreadsheet, show: true },
+    { label: 'Settings', href: '/settings', icon: Settings, show: true },
+  ].filter(item => item.show);
 
   return (
     <aside className="app-sidebar">

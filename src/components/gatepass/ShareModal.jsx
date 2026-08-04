@@ -71,15 +71,23 @@ export default function ShareModal({ isOpen, onClose, pass }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Share Gate Pass: ${pass.display_id || pass.id}`} size="md">
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '1.25rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '1px solid var(--border-color)',
+          margin: '-1.5rem -1.5rem 1.25rem -1.5rem',
+          backgroundColor: 'var(--gray-50)'
+        }}
+      >
         <button
+          type="button"
           onClick={() => setActiveTab('whatsapp')}
           style={{
             flex: 1,
-            padding: '10px',
+            padding: '12px 10px',
             border: 'none',
             borderBottom: activeTab === 'whatsapp' ? '2px solid var(--success-600)' : '2px solid transparent',
-            backgroundColor: 'transparent',
+            backgroundColor: activeTab === 'whatsapp' ? 'var(--bg-surface)' : 'transparent',
             color: activeTab === 'whatsapp' ? 'var(--success-700)' : 'var(--gray-600)',
             fontWeight: 700,
             fontSize: 'var(--text-xs)',
@@ -95,13 +103,14 @@ export default function ShareModal({ isOpen, onClose, pass }) {
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('email')}
           style={{
             flex: 1,
-            padding: '10px',
+            padding: '12px 10px',
             border: 'none',
             borderBottom: activeTab === 'email' ? '2px solid var(--primary-600)' : '2px solid transparent',
-            backgroundColor: 'transparent',
+            backgroundColor: activeTab === 'email' ? 'var(--bg-surface)' : 'transparent',
             color: activeTab === 'email' ? 'var(--primary-700)' : 'var(--gray-600)',
             fontWeight: 700,
             fontSize: 'var(--text-xs)',
@@ -117,13 +126,14 @@ export default function ShareModal({ isOpen, onClose, pass }) {
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('link')}
           style={{
             flex: 1,
-            padding: '10px',
+            padding: '12px 10px',
             border: 'none',
             borderBottom: activeTab === 'link' ? '2px solid var(--accent-600)' : '2px solid transparent',
-            backgroundColor: 'transparent',
+            backgroundColor: activeTab === 'link' ? 'var(--bg-surface)' : 'transparent',
             color: activeTab === 'link' ? 'var(--accent-700)' : 'var(--gray-600)',
             fontWeight: 700,
             fontSize: 'var(--text-xs)',
@@ -158,21 +168,22 @@ export default function ShareModal({ isOpen, onClose, pass }) {
               style={{
                 backgroundColor: 'var(--gray-50)',
                 border: '1px solid var(--gray-200)',
-                padding: '10px',
-                borderRadius: 'var(--radius-sm)',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-md)',
                 fontSize: '11px',
                 whiteSpace: 'pre-wrap',
                 maxHeight: 180,
                 overflowY: 'auto',
                 color: 'var(--gray-800)',
-                fontFamily: 'var(--font-mono)'
+                fontFamily: 'var(--font-mono)',
+                margin: 0
               }}
             >
               {waPreviewText}
             </pre>
           </div>
 
-          <Button variant="accent" icon={() => <WhatsAppIcon size={18} color="#0f172a" />} fullWidth onClick={handleWhatsAppSend}>
+          <Button variant="accent" icon={WhatsAppIcon} fullWidth onClick={handleWhatsAppSend}>
             Send via WhatsApp
           </Button>
         </div>
@@ -209,7 +220,7 @@ export default function ShareModal({ isOpen, onClose, pass }) {
             <label style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--gray-700)', display: 'block', marginBottom: 4 }}>
               Public Mobile View URL:
             </label>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input
                 type="text"
                 readOnly
@@ -222,10 +233,11 @@ export default function ShareModal({ isOpen, onClose, pass }) {
                   fontSize: 'var(--text-xs)',
                   fontFamily: 'var(--font-mono)',
                   backgroundColor: 'var(--gray-50)',
-                  color: 'var(--gray-800)'
+                  color: 'var(--gray-800)',
+                  height: '38px'
                 }}
               />
-              <Button variant={copied ? 'secondary' : 'primary'} icon={copied ? Check : Copy} onClick={handleCopyLink}>
+              <Button variant={copied ? 'secondary' : 'primary'} icon={copied ? Check : Copy} onClick={handleCopyLink} style={{ height: '38px' }}>
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </div>

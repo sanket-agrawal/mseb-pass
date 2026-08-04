@@ -32,9 +32,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
+import { getAuthUser, canViewAuditTrail, canEditGatePass } from '@/lib/auth';
+
 export default function GatePassDetailPage({ params }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const [user, setUser] = useState(() => getAuthUser());
   const [pass, setPass] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -286,26 +289,28 @@ export default function GatePassDetailPage({ params }) {
             Yellow Pass Form Preview
           </button>
 
-          <button
-            onClick={() => { setViewMode('audit'); fetchAuditTrail(); }}
-            style={{
-              padding: '8px 20px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: 'var(--text-xs)',
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              backgroundColor: viewMode === 'audit' ? '#1e293b' : 'transparent',
-              color: viewMode === 'audit' ? '#ffffff' : 'var(--gray-700)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <History style={{ width: 16, height: 16 }} />
-            Audit Trail
-          </button>
+          {canViewAuditTrail(user) && (
+            <button
+              onClick={() => { setViewMode('audit'); fetchAuditTrail(); }}
+              style={{
+                padding: '8px 20px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: viewMode === 'audit' ? '#1e293b' : 'transparent',
+                color: viewMode === 'audit' ? '#ffffff' : 'var(--gray-700)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <History style={{ width: 16, height: 16 }} />
+              Audit Trail
+            </button>
+          )}
         </div>
       </div>
 
@@ -401,7 +406,7 @@ export default function GatePassDetailPage({ params }) {
         </div>
       )}
 
-      {viewMode === 'audit' && (
+      {viewMode === 'audit' && canViewAuditTrail(user) && (
         <Card header="Audit Trail & Modification Timeline">
           {auditLogs.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '0.5rem 0' }}>

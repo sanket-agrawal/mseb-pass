@@ -108,19 +108,19 @@ export function computeStats(allPasses = [], datePreset = 'all') {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  // Driver Performance Leaderboard
-  const drvCounts = {};
+  // Contractor Performance Leaderboard
+  const contractorCounts = {};
   filteredPasses.forEach(p => {
-    const drv = p.driver_name || p.driverName || 'Unassigned';
-    drvCounts[drv] = (drvCounts[drv] || 0) + 1;
+    const contractor = p.contractor_name || p.contractorName || 'M/S Standard Electrotech Service';
+    contractorCounts[contractor] = (contractorCounts[contractor] || 0) + 1;
   });
 
-  const maxDriverTrips = Math.max(...Object.values(drvCounts), 1);
-  const driverPerformance = Object.keys(drvCounts)
+  const maxContractorTrips = Math.max(...Object.values(contractorCounts), 1);
+  const contractorPerformance = Object.keys(contractorCounts)
     .map(name => ({
       name,
-      count: drvCounts[name],
-      percentage: Math.round((drvCounts[name] / maxDriverTrips) * 100)
+      count: contractorCounts[name],
+      percentage: Math.round((contractorCounts[name] / maxContractorTrips) * 100)
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
@@ -145,7 +145,8 @@ export function computeStats(allPasses = [], datePreset = 'all') {
     monthlyTrend,
     statusDistribution,
     topSubstations,
-    driverPerformance,
+    contractorPerformance,
+    driverPerformance: contractorPerformance,
     capacityDistribution,
     recentPasses: filteredPasses.slice(0, 5)
   };

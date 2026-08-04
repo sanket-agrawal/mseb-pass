@@ -227,15 +227,31 @@ export function GatePassPDF({ data }) {
             </View>
 
             {materials.map((m, idx) => (
-              <View key={idx} style={styles.tableRow}>
-                <Text style={styles.colSr}>{idx + 1}</Text>
-                <Text style={styles.colMake}>{sanitizeText(m.make) || '-'}</Text>
-                <Text style={styles.colSrNo}>{sanitizeText(m.serial_number) || '-'}</Text>
-                <Text style={styles.colJob}>{sanitizeText(m.job_number) || '-'}</Text>
-                <Text style={styles.colCap}>{sanitizeText(m.capacity) || '-'}</Text>
-                <Text style={styles.colVillage}>{sanitizeText(m.village_name || m.dtc_number) || '-'}</Text>
-                <Text style={styles.colRemarks}>{sanitizeText(m.condition) || 'OK'}</Text>
-              </View>
+              <React.Fragment key={idx}>
+                <View style={styles.tableRow}>
+                  <Text style={styles.colSr}>{idx + 1}</Text>
+                  <Text style={styles.colMake}>{sanitizeText(m.make) || '-'}</Text>
+                  <Text style={styles.colSrNo}>{sanitizeText(m.serial_number) || '-'}</Text>
+                  <Text style={styles.colJob}>{sanitizeText(m.job_number) || '-'}</Text>
+                  <Text style={styles.colCap}>{sanitizeText(m.capacity) || '-'}</Text>
+                  <Text style={styles.colVillage}>{sanitizeText(m.village_name || m.dtc_number) || '-'}</Text>
+                  <Text style={styles.colRemarks}>{sanitizeText(m.condition) || 'OK'}</Text>
+                </View>
+                {m.failed_job_record && (
+                  <View style={{ backgroundColor: '#fef2f2', padding: 4, paddingLeft: 10 }}>
+                    <Text style={{ fontSize: 7.5, color: '#991b1b' }}>
+                      Failed Job Record: GP: {sanitizeText(m.failed_job_record.gp_reading) || 'N/A'} | Fresh: {sanitizeText(m.failed_job_record.fresh_reading) || 'N/A'} | Oil Drain Sr: {sanitizeText(m.failed_job_record.oil_drain_serial_number) || 'N/A'} | Recorded By CPF: {sanitizeText(m.failed_job_record.recorded_by_cpf) || 'N/A'}
+                    </Text>
+                  </View>
+                )}
+                {m.healthy_job_record && (
+                  <View style={{ backgroundColor: '#f0fdf4', padding: 4, paddingLeft: 10 }}>
+                    <Text style={{ fontSize: 7.5, color: '#166534' }}>
+                      Healthy Job Record: R-Phase: {sanitizeText(m.healthy_job_record.ryb_r_reading)}A | Y-Phase: {sanitizeText(m.healthy_job_record.ryb_y_reading)}A | B-Phase: {sanitizeText(m.healthy_job_record.ryb_b_reading)}A | Spark Test: {sanitizeText(m.healthy_job_record.spark_test).toUpperCase()} | Tested By CPF: {sanitizeText(m.healthy_job_record.tested_by_cpf) || 'N/A'}
+                    </Text>
+                  </View>
+                )}
+              </React.Fragment>
             ))}
           </View>
 

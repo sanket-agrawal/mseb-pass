@@ -11,6 +11,13 @@ export default function StatusUpdateModal({ isOpen, onClose, currentStatus, onCo
   const [newStatus, setNewStatus] = useState(currentStatus || 'issued');
   const [remarks, setRemarks] = useState('');
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setNewStatus(currentStatus || 'issued');
+      setRemarks('');
+    }
+  }, [isOpen, currentStatus]);
+
   const statusOptions = Object.keys(GATEPASS_STATUS_CONFIG).map(key => ({
     label: `${GATEPASS_STATUS_CONFIG[key].label} (${GATEPASS_STATUS_CONFIG[key].marathiLabel})`,
     value: key
@@ -25,19 +32,19 @@ export default function StatusUpdateModal({ isOpen, onClose, currentStatus, onCo
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Update Gate Pass Status"
+      title="Update Gate Pass Status (स्थिती अपडेट करा)"
       footer={
-        <>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', width: '100%' }}>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
           <Button variant="accent" icon={CheckCircle} onClick={handleConfirm}>
             Update Status
           </Button>
-        </>
+        </div>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '0.25rem 0' }}>
         <Select
-          label="Select New Lifecycle Status"
+          label="Select New Lifecycle Status (नवीन स्थिती निवडा)"
           value={newStatus}
           onChange={(e) => setNewStatus(e.target.value)}
           options={statusOptions}
@@ -45,7 +52,7 @@ export default function StatusUpdateModal({ isOpen, onClose, currentStatus, onCo
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--gray-700)' }}>
-            Status Update Remarks / Log
+            Status Update Remarks / Log (शेरा)
           </label>
           <textarea
             rows={3}
@@ -59,7 +66,8 @@ export default function StatusUpdateModal({ isOpen, onClose, currentStatus, onCo
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--border-color)',
               outline: 'none',
-              fontFamily: 'inherit'
+              fontFamily: 'inherit',
+              resize: 'vertical'
             }}
           />
         </div>

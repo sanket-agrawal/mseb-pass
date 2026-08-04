@@ -9,7 +9,11 @@ export function getAuthUser() {
   const data = localStorage.getItem(AUTH_USER_KEY);
   if (!data) return null;
   try {
-    return JSON.parse(data);
+    const user = JSON.parse(data);
+    if (user && (!user.roles || !Array.isArray(user.roles) || user.roles.length === 0)) {
+      user.roles = user.role ? [user.role] : ['super_admin', 'admin', 'gate_pass_creator'];
+    }
+    return user;
   } catch (e) {
     return null;
   }
@@ -83,4 +87,50 @@ export async function lookupCPF(cpfNumber) {
     return response.data;
   }
   throw new Error(response?.message || 'Official not found');
+}
+
+// Role & Permission Helpers
+export function getUserRoles(user) {
+  if (!user) return ['super_admin', 'admin', 'gate_pass_creator'];
+  if (Array.isArray(user.roles) && user.roles.length > 0) return user.roles;
+  if (user.role) return [user.role];
+  return ['gate_pass_viewer'];
+}
+
+export function hasRole(user, role) {
+  const roles = getUserRoles(user);
+  return roles.includes(role);
+}
+
+export function hasAnyRole(user, roles = []) {
+  const userRoles = getUserRoles(user);
+  return roles.some(r => userRoles.includes(r));
+}
+
+export function canCreateGatePass(user) {
+  return hasAnyRole(user, ['super_admin', 'admin', 'gate_pass_creator']);
+}
+
+export function canEditGatePass(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
+}
+
+export function canManageContractors(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
+}
+
+export function canManageStations(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
+}
+
+export function canManageUsers(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
+}
+
+export function canManageAssets(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
+}
+
+export function canViewAuditTrail(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
 }
