@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import SubstationModal from '@/components/substations/SubstationModal';
 import { getAuthUser, canManageStations } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import { Plus } from 'lucide-react';
 
 export default function SubstationsPage() {
   const router = useRouter();

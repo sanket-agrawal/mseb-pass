@@ -13,6 +13,7 @@ import { gatePassAPI, exportAPI } from '@/lib/api';
 import { Plus, Search, LayoutGrid, List, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAuthUser, canCreateGatePass } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 export default function GatePassDirectoryPage() {
   const router = useRouter();
