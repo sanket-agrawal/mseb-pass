@@ -86,6 +86,29 @@ export async function lookupCPF(cpfNumber) {
   throw new Error(response?.message || 'Official not found');
 }
 
+export function mustChangePassword(user) {
+  if (!user) return false;
+  return Boolean(user.must_change_password);
+}
+
+export async function updateUserPassword(currentPassword, newPassword) {
+  const response = await authAPI.changePassword(currentPassword, newPassword);
+  if (response && (response.success || response.data)) {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem(AUTH_USER_KEY);
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          user.must_change_password = false;
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+        } catch (_) { /* ignore */ }
+      }
+    }
+    return response;
+  }
+  throw new Error(response?.message || 'Failed to update password');
+}
+
 // Role & Permission Helpers
 export function getUserRoles(user) {
   if (!user) return ['gate_pass_viewer'];

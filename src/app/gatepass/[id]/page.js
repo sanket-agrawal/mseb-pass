@@ -199,6 +199,14 @@ export default function GatePassDetailPage({ params }) {
             Status
           </Button>
 
+          {canEditGatePass(user) && (
+            <Link href={`/gatepass/${pass.id}/edit`} style={{ textDecoration: 'none' }}>
+              <Button variant="outline" icon={Edit}>
+                Edit Pass
+              </Button>
+            </Link>
+          )}
+
           {canCreateReturn && (
             <Button variant="accent" icon={RotateCcw} onClick={handleCreateReturn}>
               Create Return Pass
