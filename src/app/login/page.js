@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginWithPassword, requestOTP, verifyOTP } from '@/lib/auth';
-import { Zap, Eye, EyeOff, Lock, Mail, ArrowRight, Phone, MessageSquare } from 'lucide-react';
+import { loginWithPassword, requestOTP, verifyOTP, isAuthenticated } from '@/lib/auth';
+import { Zap, Eye, EyeOff, Lock, Mail, ArrowRight, Phone, MessageSquare, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -21,6 +21,14 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      setRedirecting(true);
+      router.replace('/dashboard');
+    }
+  }, [router]);
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -29,12 +37,10 @@ export default function LoginPage() {
     try {
       const user = await loginWithPassword(identifier, password);
       toast.success(`Welcome back, ${user.first_name || 'User'}!`);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 500);
+      setRedirecting(true);
+      router.replace('/dashboard');
     } catch (err) {
       toast.error(err.message || 'Login failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -73,15 +79,36 @@ export default function LoginPage() {
     try {
       const user = await verifyOTP(mobile, otp);
       toast.success(`Welcome back, ${user.first_name || 'User'}!`);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 500);
+      setRedirecting(true);
+      router.replace('/dashboard');
     } catch (err) {
       toast.error(err.message || 'Invalid OTP');
-    } finally {
       setLoading(false);
     }
   };
+
+  if (redirecting) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 16,
+          color: '#ffffff',
+          fontFamily: 'var(--font-sans)',
+        }}
+      >
+        <Loader2 style={{ width: 40, height: 40, animation: 'spin 1s linear infinite', color: 'var(--accent-400)' }} />
+        <span style={{ fontSize: '1rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
+          Authenticating & Loading Dashboard...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div

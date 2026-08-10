@@ -66,19 +66,16 @@ export async function verifyOTP(mobile, otp) {
   throw new Error(response?.message || 'Invalid OTP');
 }
 
-export async function logoutUser() {
-  try {
-    await authAPI.logout();
-  } catch (e) {
-    console.warn('Logout API error:', e);
-  } finally {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(AUTH_USER_KEY);
-      localStorage.removeItem(ACCESS_TOKEN_KEY);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
-      document.cookie = 'mseb_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    }
+export function logoutUser() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    document.cookie = 'mseb_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   }
+  try {
+    authAPI.logout().catch(() => {});
+  } catch (_) { /* ignore */ }
 }
 
 export async function lookupCPF(cpfNumber) {

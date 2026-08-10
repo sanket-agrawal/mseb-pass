@@ -27,19 +27,23 @@ import {
 } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(() => getAuthUser());
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     setUser(getAuthUser());
   }, [pathname]);
 
-  const handleLogout = async () => {
-    await logoutUser();
+  const confirmLogout = () => {
+    logoutUser();
     toast.success('Logged out successfully');
-    router.push('/login');
+    router.replace('/login');
   };
 
   const officeName = user?.office?.name || user?.branch || 'MSEDCL Division';
@@ -96,7 +100,7 @@ export default function Sidebar() {
       {/* Footer Branding & Logout */}
       <div className="sidebar-footer">
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutModal(true)}
           style={{
             width: '100%',
             padding: '8px 12px',
@@ -123,6 +127,27 @@ export default function Sidebar() {
           <div style={{ color: 'var(--accent-400)', marginTop: 2 }}>{officeName}</div>
         </div>
       </div>
+
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Confirm Sign Out"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--gray-700)' }}>
+            Are you sure you want to log out of the <strong>MSEB Digital Gate Pass System</strong>?
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: '0.5rem' }}>
+            <Button variant="secondary" onClick={() => setShowLogoutModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" icon={LogOut} onClick={confirmLogout}>
+              Sign Out Now
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </aside>
   );
 }

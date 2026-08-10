@@ -45,8 +45,9 @@ export default function GatePassCard({ pass, onView, onDownload }) {
               fontWeight: 700,
               padding: '2px 8px',
               borderRadius: 'var(--radius-sm)',
-              backgroundColor: isOutward ? 'var(--primary-100)' : 'var(--accent-100)',
-              color: isOutward ? 'var(--primary-800)' : 'var(--accent-700)',
+              backgroundColor: isOutward ? 'var(--accent-100)' : 'var(--pink-100)',
+              color: isOutward ? 'var(--accent-700)' : 'var(--pink-700)',
+              border: isOutward ? '1px solid var(--accent-200)' : '1px solid var(--pink-200)',
               textTransform: 'uppercase'
             }}
           >

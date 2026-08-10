@@ -24,7 +24,21 @@ export default function GatePassPreview({ data, className = '' }) {
           <p style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600, margin: 0 }}>
             {officeName} (Gate Pass System)
           </p>
-          <div className="preview-pass-badge">
+          <div
+            className="preview-pass-badge"
+            style={{
+              display: 'inline-block',
+              marginTop: '8px',
+              padding: '4px 16px',
+              borderRadius: '20px',
+              fontSize: '0.95rem',
+              fontWeight: 800,
+              textDecoration: 'none',
+              backgroundColor: isOutward ? 'var(--accent-100)' : 'var(--pink-100)',
+              color: isOutward ? 'var(--accent-700)' : 'var(--pink-700)',
+              border: isOutward ? '1px solid var(--accent-200)' : '1px solid var(--pink-200)'
+            }}
+          >
             गेट पास ({isOutward ? 'जावक / OUTWARD' : 'आवक / INWARD'})
           </div>
         </div>

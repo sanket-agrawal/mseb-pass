@@ -253,8 +253,8 @@ export default function GatePassDetailPage({ params }) {
           style={{
             padding: '1rem 1.25rem',
             borderRadius: 'var(--radius-md)',
-            backgroundColor: '#eff6ff',
-            border: '1px solid #93c5fd',
+            backgroundColor: 'var(--pink-50, #fdf2f8)',
+            border: '1px solid var(--pink-200, #fbcfe8)',
             marginBottom: '1.5rem',
             display: 'flex',
             alignItems: 'center',
@@ -263,9 +263,9 @@ export default function GatePassDetailPage({ params }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <RotateCcw style={{ width: 20, height: 20, color: '#1e40af' }} />
+            <RotateCcw style={{ width: 20, height: 20, color: 'var(--pink-700, #be185d)' }} />
             <div>
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#1e40af' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--pink-700, #be185d)' }}>
                 LINKED ORIGINAL OUTWARD GATE PASS
               </span>
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-800)', margin: 0 }}>

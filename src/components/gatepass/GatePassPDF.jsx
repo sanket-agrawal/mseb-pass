@@ -36,12 +36,27 @@ const styles = StyleSheet.create({
     color: '#334155',
     marginBottom: 6
   },
-  passBadge: {
-    fontSize: 13,
+  passBadgeOutward: {
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#1d4ed8',
+    color: '#b45309',
+    backgroundColor: '#fef3c7',
+    padding: '3px 12px',
+    borderRadius: 4,
     textAlign: 'center',
-    marginTop: 4
+    marginTop: 4,
+    alignSelf: 'center',
+  },
+  passBadgeInward: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#be185d',
+    backgroundColor: '#fce7f3',
+    padding: '3px 12px',
+    borderRadius: 4,
+    textAlign: 'center',
+    marginTop: 4,
+    alignSelf: 'center',
   },
   infoRow: {
     flexDirection: 'row',
@@ -178,7 +193,7 @@ export function GatePassPDF({ data }) {
             <Text style={styles.subTitle}>
               Sub Division Dondaicha, Dist. Dhule (MSEDCL Dondaicha)
             </Text>
-            <Text style={styles.passBadge}>
+            <Text style={isOutward ? styles.passBadgeOutward : styles.passBadgeInward}>
               {isOutward ? 'GATE PASS (OUTWARD / JAVAK)' : 'GATE PASS (INWARD / AAVAK)'}
             </Text>
           </View>

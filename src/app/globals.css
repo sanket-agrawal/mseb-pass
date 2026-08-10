@@ -21,6 +21,15 @@
   --accent-600: #d97706;
   --accent-700: #b45309;
 
+  /* Baby Pink - MSEB Inward Gate Pass Theme */
+  --pink-50: #fdf2f8;
+  --pink-100: #fce7f3;
+  --pink-200: #fbcfe8;
+  --pink-400: #f472b6;
+  --pink-500: #ec4899;
+  --pink-600: #db2777;
+  --pink-700: #be185d;
+
   /* Status Colors */
   --success-50: #f0fdf4;
   --success-100: #dcfce7;
@@ -447,6 +456,13 @@ button, input, select, textarea {
   border: 1px solid var(--accent-200);
 }
 .badge-accent .badge-dot { background-color: var(--accent-500); }
+
+.badge-pink {
+  background-color: var(--pink-100);
+  color: var(--pink-700);
+  border: 1px solid var(--pink-200);
+}
+.badge-pink .badge-dot { background-color: var(--pink-500); }
 
 /* Table styling */
 .table-container {

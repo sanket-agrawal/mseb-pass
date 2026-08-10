@@ -14,17 +14,6 @@ import { useRouter } from 'next/navigation';
 
 const DEFAULT_MARATHI_REMARKS = 'वरील सर्व रोहित्र तपासुन बघीतले त्यांचे LT व HT Rods सुस्थितीत आहेत. तसेच रोहित्रामाधुन Oil Leakage नाही.';
 
-const DEFAULT_DTC_OPTIONS = [
-  { value: '4221318', label: '4221318 - Chaugaon', subtext: 'Village: Chaugaon | Cap: 63 KVA | Make: SVJ', data: { dtc_number: '4221318', village_name: 'Chaugaon', capacity: '63 KVA', make: 'SVJ', serial_number: '845', condition: 'new' } },
-  { value: '110293', label: '110293 - Nardana MIDC', subtext: 'Village: Nardana MIDC | Cap: 100 KVA | Make: Kirloskar', data: { dtc_number: '110293', village_name: 'Nardana MIDC', capacity: '100 KVA', make: 'Kirloskar', serial_number: 'KE-2024-5511', condition: 'repaired' } },
-  { value: '887123', label: '887123 - Shewade', subtext: 'Village: Shewade | Cap: 200 KVA | Make: ABB', data: { dtc_number: '887123', village_name: 'Shewade', capacity: '200 KVA', make: 'ABB', serial_number: 'ABB-TR-8812', condition: 'new' } },
-  { value: '4220001', label: '4220001 - Dondaicha Sub-1', subtext: 'Village: Dondaicha | Cap: 63 KVA | Make: Crompton', data: { dtc_number: '4220001', village_name: 'Dondaicha', capacity: '63 KVA', make: 'Crompton', serial_number: 'CR-1002', condition: 'new' } },
-  { value: '4220002', label: '4220002 - Virdel Feeder', subtext: 'Village: Virdel | Cap: 100 KVA | Make: Siemens', data: { dtc_number: '4220002', village_name: 'Virdel', capacity: '100 KVA', make: 'Siemens', serial_number: 'SIE-551', condition: 'repaired' } },
-  { value: '4220003', label: '4220003 - Vikhran West', subtext: 'Village: Vikhran | Cap: 25 KVA | Make: L&T', data: { dtc_number: '4220003', village_name: 'Vikhran', capacity: '25 KVA', make: 'L&T', serial_number: 'LT-8810', condition: 'faulty' } },
-  { value: '4220004', label: '4220004 - Bahmne North', subtext: 'Village: Bahmne | Cap: 63 KVA | Make: Voltamp', data: { dtc_number: '4220004', village_name: 'Bahmne', capacity: '63 KVA', make: 'Voltamp', serial_number: 'VOLT-332', condition: 'new' } },
-  { value: '4220005', label: '4220005 - Shindkheda East', subtext: 'Village: Shindkheda | Cap: 200 KVA | Make: SVJ', data: { dtc_number: '4220005', village_name: 'Shindkheda', capacity: '200 KVA', make: 'SVJ', serial_number: 'SVJ-9901', condition: 'repaired' } },
-];
-
 const DEFAULT_CPF_OPTIONS = [
   { value: '2645050', label: '2645050 - Rohit Salunkhe', subtext: 'Rohit Salunkhe (Line Staff / S/dn Dondaicha) • Mob: 9427166630', data: { cpf_number: '2645050', full_name: 'Rohit Salunkhe', mobile: '9427166630' } },
   { value: '1182741', label: '1182741 - Junior Engineer Nardana', subtext: 'Junior Engineer (Nardana S/stn) • Mob: 9421512345', data: { cpf_number: '1182741', full_name: 'Junior Engineer Nardana', mobile: '9421512345' } },
@@ -37,7 +26,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
   const router = useRouter();
   const { drivers, substations } = useDrivers();
 
-  const [dtcOptions, setDtcOptions] = useState(DEFAULT_DTC_OPTIONS);
+  const [dtcOptions, setDtcOptions] = useState([]);
   const [cpfOptions, setCpfOptions] = useState(DEFAULT_CPF_OPTIONS);
   const [contractorOptions, setContractorOptions] = useState([]);
   const [vendorOptions, setVendorOptions] = useState([]);
@@ -235,13 +224,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
               };
             });
 
-          setDtcOptions(prev => {
-            const combined = [...prev];
-            apiDtcOptions.forEach(opt => {
-              if (!combined.some(c => c.value === opt.value)) combined.push(opt);
-            });
-            return combined;
-          });
+          setDtcOptions(apiDtcOptions);
         }
         // Load contractors dynamically
         const cntRes = await contractorAPI.list({ limit: 100 });
@@ -613,7 +596,6 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
   const validate = () => {
     const errs = {};
     if (!formData.recipient_name) errs.recipient_name = 'Recipient name is required';
-    if (!formData.destination_substation) errs.destination_substation = 'Destination substation is required';
 
     // Driver details are optional. Only validate if user opened driver details and entered driver name without vehicle number
     if (showDriverDetails) {
@@ -818,7 +800,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         </div>
 
         {/* Outward vs Inward Selector */}
-        <div style={{ display: 'flex', gap: '8px', backgroundColor: '#ffffff', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-400)' }}>
+        <div style={{ display: 'flex', gap: '8px', backgroundColor: '#ffffff', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-300)' }}>
           <label
             style={{
               padding: '6px 14px',
@@ -826,8 +808,8 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
               fontSize: 'var(--text-xs)',
               fontWeight: 700,
               cursor: 'pointer',
-              backgroundColor: formData.type === 'outward' ? 'var(--primary-600)' : 'transparent',
-              color: formData.type === 'outward' ? '#ffffff' : 'var(--gray-700)',
+              backgroundColor: formData.type === 'outward' ? 'var(--accent-500)' : 'transparent',
+              color: formData.type === 'outward' ? '#0f172a' : 'var(--gray-700)',
               display: 'flex',
               alignItems: 'center',
               gap: 6
@@ -851,8 +833,8 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
               fontSize: 'var(--text-xs)',
               fontWeight: 700,
               cursor: 'pointer',
-              backgroundColor: formData.type === 'inward' ? 'var(--accent-500)' : 'transparent',
-              color: formData.type === 'inward' ? 'var(--gray-900)' : 'var(--gray-700)',
+              backgroundColor: formData.type === 'inward' ? 'var(--pink-500)' : 'transparent',
+              color: formData.type === 'inward' ? '#ffffff' : 'var(--gray-700)',
               display: 'flex',
               alignItems: 'center',
               gap: 6
@@ -883,13 +865,13 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
             allowCustom={false}
           />
 
-          <Select
-            label="गंतव्य उपकेंद्र (Destination Substation)"
-            required
-            error={errors.destination_substation}
-            value={formData.destination_substation}
-            onChange={handleSubstationChange}
-            options={(Array.isArray(substations) ? substations : []).map(s => ({ label: `${s.name} (${s.section || s.division || ''})`, value: s.name }))}
+          <SearchableSelect
+            label="प्राप्तकर्ता कार्यालय (To Office)"
+            value={formData.to_office_id}
+            onChange={(val, item) => handleOfficeSelect('to_office_id', val, item)}
+            options={officeOptions}
+            placeholder="Select destination office..."
+            allowCustom={false}
           />
 
           <Input

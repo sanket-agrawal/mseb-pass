@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
+import Modal from '@/components/ui/Modal';
 import { getAuthUser, logoutUser } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { INITIAL_GATEPASSES, INITIAL_DRIVERS, INITIAL_SUBSTATIONS } from '@/lib/seedData';
@@ -16,6 +17,7 @@ import { useRouter } from 'next/navigation';
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [orgName, setOrgName] = useState('महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEDCL)');
   const [branchName, setBranchName] = useState('गाळण शाखा-दोंडाईचा जि.धुळे (Sub Division Dondaicha)');
@@ -39,10 +41,10 @@ export default function SettingsPage() {
     setTimeout(() => window.location.reload(), 600);
   };
 
-  const handleLogout = () => {
+  const confirmLogout = () => {
     logoutUser();
     toast.success('Logged out successfully');
-    router.push('/login');
+    router.replace('/login');
   };
 
   return (
@@ -50,7 +52,7 @@ export default function SettingsPage() {
       title="System Settings & Admin Profile"
       subtitle="Manage organization branding, default PDF remarks, and system preferences."
       actions={
-        <Button variant="danger" icon={LogOut} onClick={handleLogout}>
+        <Button variant="danger" icon={LogOut} onClick={() => setShowLogoutModal(true)}>
           Sign Out
         </Button>
       }
@@ -130,6 +132,27 @@ export default function SettingsPage() {
           </div>
         </div>
       </Card>
+
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Confirm Sign Out"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--gray-700)' }}>
+            Are you sure you want to log out of the <strong>MSEB Digital Gate Pass System</strong>?
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: '0.5rem' }}>
+            <Button variant="secondary" onClick={() => setShowLogoutModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" icon={LogOut} onClick={confirmLogout}>
+              Sign Out Now
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </PageWrapper>
   );
 }
