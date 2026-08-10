@@ -33,7 +33,7 @@ const DEFAULT_CPF_OPTIONS = [
   { value: '9420099', label: '9420099 - V. R. Ahire', subtext: 'V. R. Ahire (Bahmne Section) • Mob: 9420099887', data: { cpf_number: '9420099', full_name: 'V. R. Ahire', mobile: '9420099887' } },
 ];
 
-export default function GatePassForm({ initialData = null, isEditMode = false, isSubmitting = false, onSubmit }) {
+export default function GatePassForm({ initialData = null, linkedPass = null, isEditMode = false, isSubmitting = false, onSubmit }) {
   const router = useRouter();
   const { drivers, substations } = useDrivers();
 
@@ -43,48 +43,165 @@ export default function GatePassForm({ initialData = null, isEditMode = false, i
   const [vendorOptions, setVendorOptions] = useState([]);
   const [officeOptions, setOfficeOptions] = useState([]);
 
-  const [formData, setFormData] = useState({
-    type: initialData?.type || 'outward',
-    status: initialData?.status || 'issued',
-    date: initialData?.date || new Date().toISOString().split('T')[0],
-    from_office_id: initialData?.from_office_id || '',
-    to_office_id: initialData?.to_office_id || '',
-    recipient_name: initialData?.recipient_name || 'Assistant Engineer',
-    recipient_designation: initialData?.recipient_designation || 'AE',
-    destination_section: initialData?.destination_section || 'Virdel Section',
-    destination_substation: initialData?.destination_substation || 'Shindkheda S/dn',
-    destination_division: initialData?.destination_division || 'Dhule',
-    driver_id: initialData?.driver_id || '',
-    driver_name: initialData?.driver_name || '',
-    driver_mobile: initialData?.driver_mobile || '',
-    vehicle_number: initialData?.vehicle_number || '',
-    contractor_id: initialData?.contractor_id || '',
-    contractor_name: initialData?.contractor_name || 'M/S Standard Electrotech Service',
-    materials: initialData?.materials && initialData.materials.length > 0 ? initialData.materials : [
-      {
-        sr_no: 1,
-        item_type: 'Transformer',
-        make: '',
-        serial_number: '',
-        job_number: '',
-        capacity: '63 KVA',
-        village_name: '',
-        group_number: 'Gao',
-        dtc_number: '',
-        condition: initialData?.type === 'inward' ? 'faulty' : 'new',
-        remarks: ''
-      }
-    ],
-    line_staff_name: initialData?.line_staff_name || '',
-    line_staff_mobile: initialData?.line_staff_mobile || '',
-    line_staff_cpf: initialData?.line_staff_cpf || '',
-    sender_name: initialData?.sender_name || 'Sub Divisional Officer',
-    sender_designation: initialData?.sender_designation || 'SDO Dondaicha',
-    receiver_name: initialData?.receiver_name || '',
-    receiver_designation: initialData?.receiver_designation || '',
-    remarks: initialData?.remarks || DEFAULT_MARATHI_REMARKS,
-    linked_gatepass_id: initialData?.linked_gatepass_id || null
-  });
+  const buildInitialState = (data, linked) => {
+    if (linked) {
+      const isOutward = linked.type === 'outward';
+      return {
+        type: 'inward',
+        status: 'issued',
+        date: new Date().toISOString().split('T')[0],
+        from_office_id: linked.to_office_id || '',
+        to_office_id: linked.from_office_id || '',
+        recipient_name: linked.sender_name || linked.recipient_name || 'Assistant Engineer',
+        recipient_designation: linked.sender_designation || linked.recipient_designation || 'AE',
+        destination_section: linked.destination_section || '',
+        destination_substation: linked.destination_substation || linked.from_office?.name || '',
+        destination_division: linked.destination_division || '',
+        driver_id: linked.driver_id || '',
+        driver_name: linked.driver_name || linked.driver?.name || '',
+        driver_mobile: linked.driver_mobile || linked.driver?.mobile || '',
+        vehicle_number: linked.vehicle_number || linked.driver?.vehicle_number || '',
+        contractor_id: linked.contractor_id || '',
+        contractor_name: linked.contractor_name || linked.contractor?.contractor_firm || linked.contractor?.first_name || '',
+        materials: linked.materials && linked.materials.length > 0 ? linked.materials.map(m => ({
+          sr_no: m.sr_no,
+          item_type: m.item_type || 'Transformer',
+          make: m.make || '',
+          serial_number: m.serial_number || '',
+          job_number: m.job_number || '',
+          capacity: m.capacity || '63 KVA',
+          village_name: m.village_name || '',
+          group_number: m.group_number || '',
+          dtc_number: m.dtc_number || '',
+          condition: 'faulty',
+          job_type: 'failed',
+          failed_job_record: {
+            gp_reading: '',
+            fresh_reading: '',
+            oil_drain_serial_number: '',
+            recorded_by_cpf: linked.line_staff_cpf || ''
+          },
+          healthy_job_record: {
+            ryb_r_reading: '100',
+            ryb_y_reading: '100',
+            ryb_b_reading: '100',
+            spark_test: 'ok',
+            tested_by_cpf: linked.line_staff_cpf || ''
+          },
+          remarks: m.remarks || ''
+        })) : [
+          {
+            sr_no: 1,
+            item_type: 'Transformer',
+            make: '',
+            serial_number: '',
+            job_number: '',
+            capacity: '63 KVA',
+            village_name: '',
+            group_number: '',
+            dtc_number: '',
+            condition: 'faulty',
+            job_type: 'failed',
+            failed_job_record: { gp_reading: '', fresh_reading: '', oil_drain_serial_number: '', recorded_by_cpf: '' },
+            healthy_job_record: { ryb_r_reading: '100', ryb_y_reading: '100', ryb_b_reading: '100', spark_test: 'ok', tested_by_cpf: '' },
+            remarks: ''
+          }
+        ],
+        line_staff_name: linked.line_staff_name || '',
+        line_staff_mobile: linked.line_staff_mobile || '',
+        line_staff_cpf: linked.line_staff_cpf || '',
+        sender_name: linked.recipient_name || 'Sub Divisional Officer',
+        sender_designation: linked.recipient_designation || 'SDO Dondaicha',
+        receiver_name: '',
+        receiver_designation: '',
+        remarks: `Return inward pass for ${linked.display_id || 'outward pass'}`,
+        linked_gatepass_id: linked.id
+      };
+    }
+
+    const passType = data?.type || 'outward';
+    return {
+      type: passType,
+      status: data?.status || 'issued',
+      date: data?.date || new Date().toISOString().split('T')[0],
+      from_office_id: data?.from_office_id || '',
+      to_office_id: data?.to_office_id || '',
+      recipient_name: data?.recipient_name || 'Assistant Engineer',
+      recipient_designation: data?.recipient_designation || 'AE',
+      destination_section: data?.destination_section || 'Virdel Section',
+      destination_substation: data?.destination_substation || 'Shindkheda S/dn',
+      destination_division: data?.destination_division || 'Dhule',
+      driver_id: data?.driver_id || '',
+      driver_name: data?.driver_name || '',
+      driver_mobile: data?.driver_mobile || '',
+      vehicle_number: data?.vehicle_number || '',
+      contractor_id: data?.contractor_id || '',
+      contractor_name: data?.contractor_name || 'M/S Standard Electrotech Service',
+      materials: data?.materials && data.materials.length > 0 ? data.materials.map(m => ({
+        ...m,
+        job_type: passType === 'inward' ? 'failed' : 'healthy',
+        condition: passType === 'inward' ? 'faulty' : (m.condition || 'new'),
+        failed_job_record: m.failed_job_record || {
+          gp_reading: '',
+          fresh_reading: '',
+          oil_drain_serial_number: '',
+          recorded_by_cpf: data?.line_staff_cpf || ''
+        },
+        healthy_job_record: m.healthy_job_record || {
+          ryb_r_reading: '100',
+          ryb_y_reading: '100',
+          ryb_b_reading: '100',
+          spark_test: 'ok',
+          tested_by_cpf: data?.line_staff_cpf || ''
+        }
+      })) : [
+        {
+          sr_no: 1,
+          item_type: 'Transformer',
+          make: '',
+          serial_number: '',
+          job_number: '',
+          capacity: '63 KVA',
+          village_name: '',
+          group_number: 'Gao',
+          dtc_number: '',
+          condition: passType === 'inward' ? 'faulty' : 'new',
+          job_type: passType === 'inward' ? 'failed' : 'healthy',
+          failed_job_record: {
+            gp_reading: '',
+            fresh_reading: '',
+            oil_drain_serial_number: '',
+            recorded_by_cpf: data?.line_staff_cpf || ''
+          },
+          healthy_job_record: {
+            ryb_r_reading: '100',
+            ryb_y_reading: '100',
+            ryb_b_reading: '100',
+            spark_test: 'ok',
+            tested_by_cpf: data?.line_staff_cpf || ''
+          },
+          remarks: ''
+        }
+      ],
+      line_staff_name: data?.line_staff_name || '',
+      line_staff_mobile: data?.line_staff_mobile || '',
+      line_staff_cpf: data?.line_staff_cpf || '',
+      sender_name: data?.sender_name || 'Sub Divisional Officer',
+      sender_designation: data?.sender_designation || 'SDO Dondaicha',
+      receiver_name: data?.receiver_name || '',
+      receiver_designation: data?.receiver_designation || '',
+      remarks: data?.remarks || DEFAULT_MARATHI_REMARKS,
+      linked_gatepass_id: data?.linked_gatepass_id || null
+    };
+  };
+
+  const [formData, setFormData] = useState(() => buildInitialState(initialData, linkedPass));
+
+  useEffect(() => {
+    if (linkedPass) {
+      setFormData(buildInitialState(initialData, linkedPass));
+    }
+  }, [linkedPass]);
 
   const [errors, setErrors] = useState({});
   const [lookingUpCpf, setLookingUpCpf] = useState(false);
@@ -342,6 +459,37 @@ export default function GatePassForm({ initialData = null, isEditMode = false, i
     }
   };
 
+  const handleTypeChange = (newType) => {
+    setFormData(prev => {
+      const updatedMaterials = prev.materials.map(m => {
+        const isFailed = newType === 'inward';
+        return {
+          ...m,
+          condition: isFailed ? 'faulty' : 'new',
+          job_type: isFailed ? 'failed' : 'healthy',
+          failed_job_record: m.failed_job_record || {
+            gp_reading: '',
+            fresh_reading: '',
+            oil_drain_serial_number: '',
+            recorded_by_cpf: prev.line_staff_cpf || ''
+          },
+          healthy_job_record: m.healthy_job_record || {
+            ryb_r_reading: '100',
+            ryb_y_reading: '100',
+            ryb_b_reading: '100',
+            spark_test: 'ok',
+            tested_by_cpf: prev.line_staff_cpf || ''
+          }
+        };
+      });
+      return {
+        ...prev,
+        type: newType,
+        materials: updatedMaterials
+      };
+    });
+  };
+
   const handleJobRecordChange = (idx, recordType, field, value) => {
     setFormData(prev => {
       const updated = [...prev.materials];
@@ -541,6 +689,63 @@ export default function GatePassForm({ initialData = null, isEditMode = false, i
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Linked Gate Pass Notification Banner */}
+      {(linkedPass || formData.linked_gatepass_id) && (
+        <div
+          style={{
+            padding: '1rem 1.25rem',
+            borderRadius: 'var(--radius-lg)',
+            backgroundColor: '#eff6ff',
+            border: '2px solid #3b82f6',
+            boxShadow: 'var(--shadow-sm)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: '#3b82f6',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '20px'
+              }}
+            >
+              🔗
+            </div>
+            <div>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, color: '#1e3a8a', margin: '0 0 2px 0' }}>
+                Creating Return (Inward) Gate Pass linked to #{linkedPass?.display_id || linkedPass?.serial_number || formData.linked_gatepass_id}
+              </h4>
+              <p style={{ fontSize: '12px', color: '#1d4ed8', margin: 0, fontWeight: 500 }}>
+                Origin and Destination offices have been automatically swapped. Materials & transport details pre-filled.
+              </p>
+            </div>
+          </div>
+          <span
+            style={{
+              padding: '4px 10px',
+              borderRadius: '20px',
+              backgroundColor: '#dbeafe',
+              color: '#1e40af',
+              fontSize: '11px',
+              fontWeight: 700
+            }}
+          >
+            Linked Lifecycle Pass
+          </span>
+        </div>
+      )}
+
       {/* Yellow Paper Header Banner */}
       <div
         style={{
@@ -603,7 +808,7 @@ export default function GatePassForm({ initialData = null, isEditMode = false, i
               name="type"
               value="outward"
               checked={formData.type === 'outward'}
-              onChange={() => setFormData(prev => ({ ...prev, type: 'outward' }))}
+              onChange={() => handleTypeChange('outward')}
               style={{ display: 'none' }}
             />
             जावक (OUTWARD)
@@ -628,7 +833,7 @@ export default function GatePassForm({ initialData = null, isEditMode = false, i
               name="type"
               value="inward"
               checked={formData.type === 'inward'}
-              onChange={() => setFormData(prev => ({ ...prev, type: 'inward' }))}
+              onChange={() => handleTypeChange('inward')}
               style={{ display: 'none' }}
             />
             आवक (INWARD)

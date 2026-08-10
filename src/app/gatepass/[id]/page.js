@@ -98,7 +98,9 @@ export default function GatePassDetailPage({ params }) {
   }
 
   const isOutward = pass.type === 'outward';
-  const canCreateReturn = isOutward && (pass.status === 'delivered' || pass.status === 'completed') && !pass.return_gatepass_id;
+  const returnPassObj = pass.return_gatepass || pass.linked_gatepass;
+  const linkedOutwardObj = pass.linked_gatepass;
+  const canCreateReturn = isOutward && !pass.return_gatepass_id && !pass.return_gatepass?.id && pass.status !== 'cancelled';
 
   const handleStatusConfirm = async (newStatus, remarks) => {
     try {
@@ -213,33 +215,66 @@ export default function GatePassDetailPage({ params }) {
         </div>
       }
     >
-      {/* Linked Pass Banners */}
-      {pass.linked_gatepass_id && (
+      {/* Linked Return Pass Banner (on Outward Pass) */}
+      {(pass.return_gatepass?.id || pass.return_gatepass_id) && (
         <div
           style={{
             padding: '1rem 1.25rem',
             borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--accent-50)',
-            border: '1px solid var(--accent-200)',
+            backgroundColor: '#f0fdf4',
+            border: '1px solid #86efac',
             marginBottom: '1.5rem',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            gap: '12px'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <RotateCcw style={{ width: 20, height: 20, color: 'var(--accent-600)' }} />
+            <RotateCcw style={{ width: 20, height: 20, color: '#166534' }} />
             <div>
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-700)' }}>
-                LINKED RETURN GATE PASS
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#166534' }}>
+                LINKED RETURN (INWARD) GATE PASS CREATED
               </span>
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-800)' }}>
-                This return pass is linked to Outward Gate Pass: <strong>{pass.linked_gatepass_id}</strong>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-800)', margin: 0 }}>
+                Return pass created: <strong>{pass.return_gatepass?.display_id || pass.return_gatepass_id}</strong>
               </p>
             </div>
           </div>
-          <Link href={`/gatepass/${pass.linked_gatepass_id}`} style={{ textDecoration: 'none' }}>
-            <Button variant="outline" size="sm">View Outward Pass</Button>
+          <Link href={`/gatepass/${pass.return_gatepass?.id || pass.return_gatepass_id}`} style={{ textDecoration: 'none' }}>
+            <Button variant="outline" size="sm">View Return Inward Pass</Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Linked Outward Pass Banner (on Inward Pass) */}
+      {(pass.linked_gatepass_id || pass.linked_gatepass?.id) && (
+        <div
+          style={{
+            padding: '1rem 1.25rem',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: '#eff6ff',
+            border: '1px solid #93c5fd',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <RotateCcw style={{ width: 20, height: 20, color: '#1e40af' }} />
+            <div>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#1e40af' }}>
+                LINKED ORIGINAL OUTWARD GATE PASS
+              </span>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-800)', margin: 0 }}>
+                This inward return pass is linked to Outward Pass: <strong>{pass.linked_gatepass?.display_id || pass.linked_gatepass_id}</strong>
+              </p>
+            </div>
+          </div>
+          <Link href={`/gatepass/${pass.linked_gatepass?.id || pass.linked_gatepass_id}`} style={{ textDecoration: 'none' }}>
+            <Button variant="outline" size="sm">View Original Outward Pass</Button>
           </Link>
         </div>
       )}

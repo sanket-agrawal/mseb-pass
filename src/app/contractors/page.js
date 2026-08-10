@@ -9,7 +9,9 @@ import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import { getAuthUser, canManageContractors } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { contractorAPI } from '@/lib/api';
+import { Plus, Phone, Edit } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function ContractorsPage() {
   const router = useRouter();

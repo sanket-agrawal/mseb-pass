@@ -214,6 +214,13 @@ export function GatePassPDF({ data }) {
             <Text style={styles.value}>{contractorStr}</Text>
           </View>
 
+          {(data.linked_gatepass_id || data.linked_gatepass?.display_id) && (
+            <View style={styles.fieldRow}>
+              <Text style={styles.label}>Linked Pass Ref:</Text>
+              <Text style={styles.value}>{sanitizeText(data.linked_gatepass?.display_id || data.linked_gatepass_id)}</Text>
+            </View>
+          )}
+
           {/* Material Table */}
           <View style={styles.table}>
             <View style={styles.tableHeader}>

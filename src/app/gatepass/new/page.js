@@ -15,14 +15,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getAuthUser, canCreateGatePass } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 
+import { gatePassAPI } from '@/lib/api';
+
 function GatePassNewFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const linkedId = searchParams.get('linked_id');
   const { createPass, getPass } = useGatePass();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fetchedLinkedPass, setFetchedLinkedPass] = useState(null);
+  const [loadingLinked, setLoadingLinked] = useState(Boolean(linkedId));
 
-  const linkedPass = linkedId ? getPass(linkedId) : null;
+  const linkedPass = fetchedLinkedPass || (linkedId ? getPass(linkedId) : null);
 
   useEffect(() => {
     const authUser = getAuthUser();
@@ -31,6 +35,22 @@ function GatePassNewFormContent() {
       router.push('/gatepass');
     }
   }, [router]);
+
+  useEffect(() => {
+    if (linkedId) {
+      setLoadingLinked(true);
+      gatePassAPI.get(linkedId)
+        .then(res => {
+          if (res?.data) {
+            setFetchedLinkedPass(res.data);
+          }
+        })
+        .catch(err => {
+          console.warn('Could not fetch linked pass via API:', err);
+        })
+        .finally(() => setLoadingLinked(false));
+    }
+  }, [linkedId]);
 
   const handleFormSubmit = async (formData) => {
     setIsSubmitting(true);
