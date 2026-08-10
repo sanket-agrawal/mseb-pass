@@ -47,7 +47,6 @@ export default function ContractorsPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    vendor_code: '',
     contact_person: '',
     mobile: '',
     address: '',
@@ -58,7 +57,6 @@ export default function ContractorsPage() {
     setSelectedContractor(null);
     setFormData({
       name: '',
-      vendor_code: `VND-30000${contractors.length + 1}`,
       contact_person: '',
       mobile: '',
       address: '',
@@ -71,7 +69,6 @@ export default function ContractorsPage() {
     setSelectedContractor(contractor);
     setFormData({
       name: contractor.name || '',
-      vendor_code: contractor.vendor_code || '',
       contact_person: contractor.contact_person || '',
       mobile: contractor.mobile || '',
       address: contractor.address || '',
@@ -84,6 +81,10 @@ export default function ContractorsPage() {
     e.preventDefault();
     if (!formData.name) {
       toast.error('Contractor company name is required');
+      return;
+    }
+    if (formData.mobile && !/^\d{10}$/.test(formData.mobile.trim())) {
+      toast.error('Mobile number must be exactly 10 digits');
       return;
     }
 
@@ -118,15 +119,6 @@ export default function ContractorsPage() {
   };
 
   const columns = [
-    {
-      header: 'Vendor Code',
-      accessorKey: 'vendor_code',
-      cell: (row) => (
-        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary-700)', fontSize: '13px' }}>
-          {row.vendor_code}
-        </span>
-      ),
-    },
     {
       header: 'Contractor Company Name',
       accessorKey: 'name',
@@ -203,13 +195,6 @@ export default function ContractorsPage() {
         title={selectedContractor ? 'Edit Contractor Details' : 'Register New Contractor'}
       >
         <form onSubmit={handleSaveContractor} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Input
-            label="Vendor Code"
-            required
-            value={formData.vendor_code}
-            onChange={(e) => setFormData(prev => ({ ...prev, vendor_code: e.target.value }))}
-          />
-
           <Input
             label="Contractor Company Name"
             placeholder="e.g. M/S Standard Electrotech Service"

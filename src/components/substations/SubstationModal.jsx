@@ -44,6 +44,10 @@ export default function SubstationModal({ isOpen, onClose, substation = null, on
     if (!formData.name || !formData.section) {
       return;
     }
+    if (formData.contact_mobile && !/^\d{10}$/.test(formData.contact_mobile.trim())) {
+      alert('Contact mobile number must be exactly 10 digits');
+      return;
+    }
     onSave(formData);
     onClose();
   };

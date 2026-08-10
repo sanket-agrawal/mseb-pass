@@ -68,7 +68,7 @@ export default function GatePassPreview({ data, className = '' }) {
 
           <div className="field-row">
             <span className="field-label">विजखात्यास/ठेकेदारास (Contractor):</span>
-            <span className="field-value">{data.contractor_name || 'MSEDCL'}</span>
+            <span className="field-value">{data.contractor_name || '-'}</span>
           </div>
 
           {(data.linked_gatepass_id || data.linked_gatepass?.display_id) && (

@@ -163,7 +163,7 @@ export function GatePassPDF({ data }) {
 
   const recipientStr = sanitizeText(`${data.recipient_name || ''} ${data.recipient_designation ? `(${data.recipient_designation})` : ''} - ${data.destination_substation || ''}, ${data.destination_section || ''}`) || `${data.recipient_name || 'AE'} - ${data.destination_substation || 'Substation'}`;
   const driverStr = sanitizeText(`${data.driver_name || ''} (Mob: ${data.driver_mobile || ''})`) || `${data.driver_name || ''}`;
-  const contractorStr = sanitizeText(data.contractor_name) || 'M/S Standard Electrotech Service';
+  const contractorStr = sanitizeText(data.contractor_name) || '-';
   const remarksStr = sanitizeText(data.remarks) || 'Inspected all transformer units. LT and HT Rods in good condition. No oil leakage.';
 
   return (

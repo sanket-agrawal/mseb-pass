@@ -62,7 +62,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         driver_mobile: linked.driver_mobile || linked.driver?.mobile || '',
         vehicle_number: linked.vehicle_number || linked.driver?.vehicle_number || '',
         contractor_id: linked.contractor_id || '',
-        contractor_name: linked.contractor_name || linked.contractor?.contractor_firm || linked.contractor?.first_name || '',
+        contractor_name: (linked.contractor_name && !linked.contractor_name.startsWith('cnt_') ? linked.contractor_name : (linked.contractor?.company_name || linked.contractor?.contractor_firm || linked.contractor?.name || '')),
         materials: linked.materials && linked.materials.length > 0 ? linked.materials.map(m => ({
           sr_no: m.sr_no,
           item_type: m.item_type || 'Transformer',
@@ -136,7 +136,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
       driver_mobile: data?.driver_mobile || '',
       vehicle_number: data?.vehicle_number || '',
       contractor_id: data?.contractor_id || '',
-      contractor_name: data?.contractor_name || 'M/S Standard Electrotech Service',
+      contractor_name: data?.contractor_name || '',
       materials: data?.materials && data.materials.length > 0 ? data.materials.map(m => ({
         ...m,
         job_type: passType === 'inward' ? 'failed' : 'healthy',
@@ -216,19 +216,24 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         const assetRes = await assetAPI.list({ limit: 100 });
         const assets = assetRes?.data?.assets || assetRes?.data || [];
         if (Array.isArray(assets) && assets.length > 0) {
-          const apiDtcOptions = assets.map(a => ({
-            value: a.dtc_number || a.asset_code || a.serial_number,
-            label: `${a.dtc_number || a.asset_code} - ${a.village_name || a.location_office?.name || 'Asset'}`,
-            subtext: `Village: ${a.village_name || 'N/A'} | Cap: ${a.capacity || 'N/A'} | Make: ${a.make || 'N/A'}`,
-            data: {
-              dtc_number: a.dtc_number || a.asset_code,
-              make: a.make || '',
-              serial_number: a.serial_number || '',
-              capacity: a.capacity || '',
-              village_name: a.village_name || '',
-              condition: a.condition || 'new'
-            }
-          })).filter(o => o.value);
+          const apiDtcOptions = assets
+            .filter(a => a.dtc_number || a.dtc_code)
+            .map(a => {
+              const dtcVal = a.dtc_number || a.dtc_code;
+              return {
+                value: dtcVal,
+                label: `${dtcVal} - ${a.village_name || a.location_office?.name || a.location_substation || 'Asset'}`,
+                subtext: `Village: ${a.village_name || 'N/A'} | Cap: ${a.capacity || a.capacity_kva || 'N/A'} | Make: ${a.make || 'N/A'}`,
+                data: {
+                  dtc_number: dtcVal,
+                  make: a.make || '',
+                  serial_number: a.serial_number || '',
+                  capacity: a.capacity || a.capacity_kva || '',
+                  village_name: a.village_name || '',
+                  condition: a.condition || 'new'
+                }
+              };
+            });
 
           setDtcOptions(prev => {
             const combined = [...prev];
@@ -242,12 +247,15 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         const cntRes = await contractorAPI.list({ limit: 100 });
         const cntList = cntRes?.data?.contractors || cntRes?.data || [];
         if (Array.isArray(cntList) && cntList.length > 0) {
-          const apiCntOptions = cntList.map(c => ({
-            value: c.id,
-            label: c.name,
-            subtext: `Vendor Code: ${c.vendor_code || 'VND'} | ${c.address || 'Contractor'}`,
-            data: c
-          }));
+          const apiCntOptions = cntList.map(c => {
+            const firmName = c.name || c.company_name || c.contractor_firm || 'Contractor';
+            return {
+              value: c.id,
+              label: firmName,
+              subtext: `${c.address || 'MSEDCL Contractor Partner'}`,
+              data: { ...c, company_name: firmName, name: firmName }
+            };
+          });
 
           setContractorOptions(prev => {
             const combined = [...prev];
@@ -437,7 +445,22 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
 
   // Handle office selection for from/to
   const handleOfficeSelect = (field, selectedId, optionData) => {
-    setFormData(prev => ({ ...prev, [field]: selectedId }));
+    const targetOffice = optionData?.data || officeOptions.find(o => o.value === selectedId)?.data;
+    setFormData(prev => {
+      const nextState = { ...prev, [field]: selectedId };
+      if (field === 'from_office_id' && targetOffice) {
+        const typeStr = (targetOffice.type || targetOffice.office_type || targetOffice.name || '').toLowerCase();
+        if (typeStr.includes('division')) {
+          nextState.type = 'outward';
+          nextState.materials = (nextState.materials || []).map(m => ({
+            ...m,
+            job_type: 'healthy',
+            condition: m.condition === 'faulty' ? 'new' : (m.condition || 'new')
+          }));
+        }
+      }
+      return nextState;
+    });
   };
 
   // Auto-fill substation section & division when substation is selected
@@ -597,6 +620,13 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
       if (formData.driver_name && !formData.vehicle_number) {
         errs.vehicle_number = 'Vehicle number is required when driver details are provided';
       }
+      if (formData.driver_mobile && !/^\d{10}$/.test(formData.driver_mobile.trim())) {
+        errs.driver_mobile = 'Driver phone number must be exactly 10 digits';
+      }
+    }
+
+    if (formData.line_staff_mobile && !/^\d{10}$/.test(formData.line_staff_mobile.trim())) {
+      errs.line_staff_mobile = 'Line staff mobile number must be exactly 10 digits';
     }
 
     if (formData.materials.length === 0) {
@@ -853,15 +883,6 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
             allowCustom={false}
           />
 
-          <SearchableSelect
-            label="प्राप्तकर्ता कार्यालय (To Office)"
-            value={formData.to_office_id}
-            onChange={(val, item) => handleOfficeSelect('to_office_id', val, item)}
-            options={officeOptions}
-            placeholder="Select destination office..."
-            allowCustom={false}
-          />
-
           <Select
             label="गंतव्य उपकेंद्र (Destination Substation)"
             required
@@ -915,13 +936,14 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', alignItems: 'end' }}>
             <SearchableSelect
               label="ठेकेदारास (Contractor Name)"
-              value={formData.contractor_id || formData.contractor_name}
+              value={formData.contractor_name || formData.contractor_id}
               onChange={(val, item) => {
                 const target = item?.data || item || {};
+                const firmName = target.name || target.company_name || target.contractor_firm || val;
                 if (target.id) {
-                  setFormData(prev => ({ ...prev, contractor_id: target.id, contractor_name: target.name || val }));
+                  setFormData(prev => ({ ...prev, contractor_id: target.id, contractor_name: firmName }));
                 } else {
-                  setFormData(prev => ({ ...prev, contractor_id: '', contractor_name: val }));
+                  setFormData(prev => ({ ...prev, contractor_id: '', contractor_name: firmName }));
                 }
               }}
               options={contractorOptions}
@@ -1142,23 +1164,25 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
                     >
                       ✅ Healthy Job (सुस्थितीत रोहित्र)
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMaterialChange(idx, 'job_type', 'failed')}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: 'var(--radius-sm, 6px)',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: 'pointer',
-                        backgroundColor: mat.job_type === 'failed' || mat.condition === 'faulty' ? 'var(--danger-600, #dc2626)' : 'var(--gray-200, #e2e8f0)',
-                        color: mat.job_type === 'failed' || mat.condition === 'faulty' ? '#ffffff' : 'var(--gray-700, #334155)',
-                        boxShadow: mat.job_type === 'failed' || mat.condition === 'faulty' ? '0 2px 4px rgba(220, 38, 38, 0.2)' : 'none',
-                      }}
-                    >
-                      ⚠️ Failed Job (दूषित / जळालेले रोहित्र)
-                    </button>
+                    {formData.type !== 'outward' && (
+                      <button
+                        type="button"
+                        onClick={() => handleMaterialChange(idx, 'job_type', 'failed')}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: 'var(--radius-sm, 6px)',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: mat.job_type === 'failed' || mat.condition === 'faulty' ? 'var(--danger-600, #dc2626)' : 'var(--gray-200, #e2e8f0)',
+                          color: mat.job_type === 'failed' || mat.condition === 'faulty' ? '#ffffff' : 'var(--gray-700, #334155)',
+                          boxShadow: mat.job_type === 'failed' || mat.condition === 'faulty' ? '0 2px 4px rgba(220, 38, 38, 0.2)' : 'none',
+                        }}
+                      >
+                        ⚠️ Failed Job (दूषित / जळालेले रोहित्र)
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1308,6 +1332,8 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
 
           <Input
             label="लाइन स्टाफ मोबाईल (Staff Phone)"
+            placeholder="10-digit mobile number"
+            error={errors.line_staff_mobile}
             value={formData.line_staff_mobile}
             onChange={(e) => setFormData(prev => ({ ...prev, line_staff_mobile: e.target.value }))}
           />

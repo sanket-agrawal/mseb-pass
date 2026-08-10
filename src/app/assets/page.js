@@ -87,7 +87,8 @@ export default function AssetsPage() {
         serial_number: assetToEdit.serial_number || '',
         make: assetToEdit.make || '',
         capacity_kva: assetToEdit.capacity_kva || '100 KVA',
-        dtc_code: assetToEdit.dtc_code || '',
+        dtc_code: assetToEdit.dtc_number || assetToEdit.dtc_code || '',
+        dtc_number: assetToEdit.dtc_number || assetToEdit.dtc_code || '',
         location_substation: assetToEdit.location_substation || '',
         condition: assetToEdit.condition || 'good',
         office_id: assetToEdit.office_id || '',
@@ -99,6 +100,7 @@ export default function AssetsPage() {
         make: '',
         capacity_kva: '100 KVA',
         dtc_code: '',
+        dtc_number: '',
         location_substation: '',
         condition: 'good',
         office_id: '',
@@ -116,11 +118,16 @@ export default function AssetsPage() {
 
     setSaving(true);
     try {
+      const payload = {
+        ...formData,
+        dtc_number: formData.dtc_code || formData.dtc_number,
+        dtc_code: formData.dtc_code || formData.dtc_number,
+      };
       if (editingAsset) {
-        await assetAPI.update(editingAsset.id, formData);
+        await assetAPI.update(editingAsset.id, payload);
         toast.success('Asset details updated successfully');
       } else {
-        await assetAPI.create(formData);
+        await assetAPI.create(payload);
         toast.success('New transformer asset registered');
       }
       setModalOpen(false);
@@ -210,7 +217,7 @@ export default function AssetsPage() {
     const q = search.toLowerCase();
     const sn = (a.serial_number || '').toLowerCase();
     const make = (a.make || '').toLowerCase();
-    const dtc = (a.dtc_code || '').toLowerCase();
+    const dtc = (a.dtc_number || a.dtc_code || '').toLowerCase();
     const sub = (a.location_substation || '').toLowerCase();
     return sn.includes(q) || make.includes(q) || dtc.includes(q) || sub.includes(q);
   });
@@ -296,8 +303,8 @@ export default function AssetsPage() {
                       <td style={{ padding: '12px', color: 'var(--gray-700)' }}>
                         {a.capacity_kva || '100 KVA'}
                       </td>
-                      <td style={{ padding: '12px', color: 'var(--gray-700)' }}>
-                        {a.dtc_code || '—'}
+                      <td style={{ padding: '12px', color: 'var(--gray-700)', fontWeight: 600 }}>
+                        {a.dtc_number || a.dtc_code || '—'}
                       </td>
                       <td style={{ padding: '12px', color: 'var(--gray-700)' }}>
                         {a.location_substation || 'Sub Division Store'}
