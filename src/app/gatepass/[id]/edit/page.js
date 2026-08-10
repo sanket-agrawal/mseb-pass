@@ -43,8 +43,8 @@ export default function EditGatePassPage({ params }) {
 
   return (
     <PageWrapper
-      title={`Edit Gate Pass: ${pass.id}`}
-      subtitle={`Serial No. ${pass.serial_number} (${pass.type === 'outward' ? 'जावक' : 'आवक'})`}
+      title={`Edit Gate Pass: ${pass.display_id || pass.id}`}
+      subtitle={`${(pass.display_id || (pass.serial_number && pass.serial_number !== 'undefined')) ? `Pass Ref: ${pass.display_id || pass.serial_number} • ` : ''}(${pass.type === 'outward' ? 'जावक / OUTWARD' : 'आवक / INWARD'})`}
     >
       <GatePassForm
         initialData={pass}

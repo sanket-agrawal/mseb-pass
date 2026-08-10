@@ -10,7 +10,7 @@ import SearchableSelect from '@/components/ui/SearchableSelect';
 import Loader from '@/components/ui/Loader';
 import { userAPI, officeAPI } from '@/lib/api';
 import { getAuthUser, canManageUsers } from '@/lib/auth';
-import { Users, UserPlus, Shield, CheckSquare, Square, Search, Edit3, UserX, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { Users, UserPlus, Shield, CheckSquare, Square, Search, Edit3, UserX, Upload, Download, FileSpreadsheet, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
@@ -30,6 +30,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -48,7 +49,7 @@ export default function UsersPage() {
     const authUser = getAuthUser();
     setCurrentUser(authUser);
     if (authUser && !canManageUsers(authUser)) {
-      toast.error('Access restricted to Admin or Super Admin role');
+      toast.error('Access restricted to Super Admin role');
       router.push('/dashboard');
       return;
     }
@@ -303,15 +304,15 @@ export default function UsersPage() {
 
   return (
     <PageWrapper
-      title="User Management & Role Permissions"
-      subtitle="Master List Management to create accounts, assign or revoke feature roles, and bulk import employees via Excel."
+      title="Employee Management & Role Permissions"
+      subtitle="Master List Management to create employee accounts, assign or revoke feature roles, and bulk import employees via Excel."
       actions={
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Button variant="outline" icon={Upload} onClick={() => setBulkModalOpen(true)}>
             Bulk Excel Import
           </Button>
           <Button variant="primary" icon={UserPlus} onClick={() => handleOpenModal(null)}>
-            + Add New User
+            + Add New Employee
           </Button>
         </div>
       }
@@ -468,13 +469,34 @@ export default function UsersPage() {
             />
           </div>
 
-          <Input
-            label={editingUser ? 'Password (Leave blank to keep unchanged)' : 'Initial Password'}
-            type="password"
-            placeholder="Min 6 characters..."
-            value={formData.password}
-            onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
-          />
+          <div style={{ position: 'relative' }}>
+            <Input
+              label={editingUser ? 'Password (Leave blank to keep unchanged)' : 'Initial Password'}
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Min 6 characters..."
+              value={formData.password}
+              onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                bottom: '10px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--gray-500)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px'
+              }}
+              title={showPassword ? 'Hide Password' : 'Show Password'}
+            >
+              {showPassword ? <EyeOff style={{ width: 18, height: 18 }} /> : <Eye style={{ width: 18, height: 18 }} />}
+            </button>
+          </div>
 
           <SearchableSelect
             label="Assigned Station / Office"

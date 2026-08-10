@@ -898,17 +898,6 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
             onChange={(e) => setFormData(prev => ({ ...prev, recipient_designation: e.target.value }))}
           />
 
-          <Input
-            label="विभाग / सेक्शन (Section)"
-            value={formData.destination_section}
-            onChange={(e) => setFormData(prev => ({ ...prev, destination_section: e.target.value }))}
-          />
-
-          <Input
-            label="मंडल (Division)"
-            value={formData.destination_division}
-            onChange={(e) => setFormData(prev => ({ ...prev, destination_division: e.target.value }))}
-          />
         </div>
       </Card>
 

@@ -215,7 +215,6 @@ export default function NewGatePassPage() {
   return (
     <PageWrapper
       title="Issue Digital Gate Pass"
-      subtitle="Fill in transport and transformer details matching the MSEDCL physical yellow pass form."
       actions={
         <Link href="/gatepass" style={{ textDecoration: 'none' }}>
           <Button variant="outline" icon={ArrowLeft}>

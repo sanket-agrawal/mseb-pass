@@ -6,6 +6,11 @@ import { APP_INFO } from '@/lib/constants';
 export const metadata = {
   title: APP_INFO.fullName,
   description: 'Digital Gate Pass Management System for Maharashtra State Electricity Distribution Company',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }) {

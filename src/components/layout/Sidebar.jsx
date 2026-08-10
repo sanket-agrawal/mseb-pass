@@ -46,7 +46,9 @@ export default function Sidebar() {
     router.replace('/login');
   };
 
-  const officeName = user?.office?.name || user?.branch || 'MSEDCL Division';
+  const officeName = user?.office?.name || user?.branch || 'Sub Division Dondaicha';
+  const mandalName = user?.mandal || user?.circle || user?.office?.mandal || user?.office?.circle || 'Dhule Circle (धुळे मंडल)';
+  const divisionName = user?.division || user?.office?.division || 'Dhule Division (धुळे विभाग)';
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, show: true },
@@ -55,7 +57,7 @@ export default function Sidebar() {
     { label: 'Asset Management', href: '/assets', icon: Boxes, show: canManageAssets(user) },
     { label: 'Contractors', href: '/contractors', icon: Truck, show: canManageContractors(user) },
     { label: 'Substations & Offices', href: '/substations', icon: Building2, show: canManageStations(user) },
-    { label: 'User Management', href: '/users', icon: Users, show: canManageUsers(user) },
+    { label: 'Employee Management', href: '/users', icon: Users, show: canManageUsers(user) },
     { label: 'Excel Export', href: '/export', icon: FileSpreadsheet, show: true },
     { label: 'Settings', href: '/settings', icon: Settings, show: true },
   ].filter(item => item.show);
@@ -67,12 +69,15 @@ export default function Sidebar() {
         <div className="sidebar-logo">
           <Zap style={{ width: 22, height: 22, color: 'var(--accent-500)', fill: 'currentColor' }} />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
           <span style={{ fontSize: 'var(--text-base)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             MSEB Gate Pass
           </span>
-          <span style={{ fontSize: '10px', color: 'var(--gray-400)', fontWeight: 600 }}>
-            {officeName}
+          <span style={{ fontSize: '11px', color: 'var(--accent-400)', fontWeight: 700 }}>
+            {mandalName}
+          </span>
+          <span style={{ fontSize: '10px', color: 'var(--gray-300)', fontWeight: 600 }}>
+            {divisionName} • {officeName}
           </span>
         </div>
       </div>
@@ -122,9 +127,10 @@ export default function Sidebar() {
           Sign Out
         </button>
 
-        <div style={{ fontSize: '10px', color: 'var(--gray-400)', textAlign: 'center' }}>
-          <div>MSEB Digital Initiative v1.0</div>
-          <div style={{ color: 'var(--accent-400)', marginTop: 2 }}>{officeName}</div>
+        <div style={{ fontSize: '10px', color: 'var(--gray-400)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div>MSEB Digital Initiative</div>
+          <div style={{ color: 'var(--accent-400)', fontWeight: 700 }}>{mandalName}</div>
+          <div style={{ color: '#cbd5e1', fontWeight: 600 }}>{divisionName}</div>
         </div>
       </div>
 

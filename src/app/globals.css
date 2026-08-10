@@ -509,9 +509,8 @@ button, input, select, textarea {
   border-bottom: none;
 }
 
-/* Yellow Paper Gate Pass Preview Styles */
+/* Digital Gate Pass Preview Styles (Pink for Inward, Yellow for Outward) */
 .gatepass-preview {
-  background-color: #FFF9C4;
   color: #0f172a;
   border-radius: var(--radius-lg);
   padding: 1.5rem;
@@ -519,12 +518,25 @@ button, input, select, textarea {
   max-width: 840px;
   margin: 0 auto;
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease;
+}
+
+.gatepass-preview.outward,
+.gatepass-preview.outward .preview-container {
+  background-color: #FFF9C4;
+  border-color: #1e293b;
+}
+
+.gatepass-preview.inward,
+.gatepass-preview.inward .preview-container {
+  background-color: #FCE4EC;
+  border-color: #be185d;
 }
 
 .preview-container {
-  border: 2px solid #1e293b;
+  border-width: 2px;
+  border-style: solid;
   padding: 1.25rem;
-  background-color: #FFF9C4;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

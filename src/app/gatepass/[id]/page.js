@@ -180,7 +180,7 @@ export default function GatePassDetailPage({ params }) {
   return (
     <PageWrapper
       title={`Gate Pass: ${pass.display_id || pass.id}`}
-      subtitle={`Serial No. ${pass.serial_number} • Date: ${pass.date ? new Date(pass.date).toISOString().split('T')[0] : ''}`}
+      subtitle={`${(pass.display_id || (pass.serial_number && pass.serial_number !== 'undefined')) ? `Pass Ref: ${pass.display_id || pass.serial_number} • ` : ''}Date: ${pass.date ? new Date(pass.date).toISOString().split('T')[0] : ''}`}
       actions={
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Link href="/gatepass" style={{ textDecoration: 'none' }}>
@@ -321,7 +321,7 @@ export default function GatePassDetailPage({ params }) {
             }}
           >
             <FileText style={{ width: 16, height: 16 }} />
-            Yellow Pass Form Preview
+            Gate Pass Preview
           </button>
 
           {canViewAuditTrail(user) && (

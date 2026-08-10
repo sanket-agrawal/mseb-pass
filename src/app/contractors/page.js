@@ -23,7 +23,7 @@ export default function ContractorsPage() {
   useEffect(() => {
     const authUser = getAuthUser();
     if (authUser && !canManageContractors(authUser)) {
-      toast.error('Access restricted to Admin or Super Admin role');
+      toast.error('Access restricted to Super Admin role');
       router.push('/dashboard');
       return;
     }

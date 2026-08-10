@@ -56,6 +56,19 @@ export default function GatePassDirectoryPage() {
   };
 
   const filteredPasses = passes.filter((p) => {
+    // If user is Admin (not Super Admin), filter passes of user's division
+    const roles = Array.isArray(user?.roles) ? user.roles : (user?.role ? [user.role] : []);
+    const isSuperAdmin = roles.includes('super_admin');
+    const isAdmin = roles.includes('admin');
+
+    if (isAdmin && !isSuperAdmin) {
+      const userDiv = (user?.division || user?.office?.division || 'Dhule').toLowerCase();
+      const passDiv = (p.destination_division || p.from_office?.division || 'Dhule').toLowerCase();
+      if (!passDiv.includes(userDiv) && !userDiv.includes(passDiv)) {
+        return false;
+      }
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       const matchId = (p.display_id || p.id || '').toLowerCase().includes(q);

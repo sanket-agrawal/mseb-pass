@@ -53,7 +53,7 @@ export default function AssetsPage() {
     const authUser = getAuthUser();
     setCurrentUser(authUser);
     if (authUser && !canManageAssets(authUser)) {
-      toast.error('Access restricted to Admin or Super Admin role');
+      toast.error('Access restricted to Super Admin role');
       router.push('/dashboard');
       return;
     }

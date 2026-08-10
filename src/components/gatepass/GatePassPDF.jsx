@@ -175,16 +175,18 @@ export function GatePassPDF({ data }) {
 
   const isOutward = data.type === 'outward';
   const materials = data.materials || [];
+  const pageBg = isOutward ? '#FFF9C4' : '#FCE4EC';
+  const borderColor = isOutward ? '#1e293b' : '#be185d';
 
-  const recipientStr = sanitizeText(`${data.recipient_name || ''} ${data.recipient_designation ? `(${data.recipient_designation})` : ''} - ${data.destination_substation || ''}, ${data.destination_section || ''}`) || `${data.recipient_name || 'AE'} - ${data.destination_substation || 'Substation'}`;
+  const recipientStr = sanitizeText(`${data.recipient_name || ''} ${data.recipient_designation ? `(${data.recipient_designation})` : ''} - ${data.destination_substation || ''}${data.destination_section ? `, ${data.destination_section}` : ''}`) || `${data.recipient_name || 'AE'} - ${data.destination_substation || 'Substation'}`;
   const driverStr = sanitizeText(`${data.driver_name || ''} (Mob: ${data.driver_mobile || ''})`) || `${data.driver_name || ''}`;
   const contractorStr = sanitizeText(data.contractor_name) || '-';
   const remarksStr = sanitizeText(data.remarks) || 'Inspected all transformer units. LT and HT Rods in good condition. No oil leakage.';
 
   return (
     <Document title={`MSEB_GatePass_${data.id}`}>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.container}>
+      <Page size="A4" style={[styles.page, { backgroundColor: pageBg }]}>
+        <View style={[styles.container, { borderColor }]}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.orgTitle}>

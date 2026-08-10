@@ -9,10 +9,12 @@ export default function GatePassPreview({ data, className = '' }) {
   const isOutward = data.type === 'outward';
   const materials = data.materials || [];
   const officeName = data.from_office?.name || data.sender_designation || 'MSEDCL Office';
+  const paperBgColor = isOutward ? '#FFF9C4' : '#FCE4EC';
+  const paperBorderColor = isOutward ? '#1e293b' : '#be185d';
 
   return (
-    <div className={`gatepass-preview ${className}`}>
-      <div className="preview-container">
+    <div className={`gatepass-preview ${isOutward ? 'outward' : 'inward'} ${className}`} style={{ backgroundColor: paperBgColor }}>
+      <div className="preview-container" style={{ backgroundColor: paperBgColor, borderColor: paperBorderColor }}>
         {/* Header */}
         <div className="preview-header">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
@@ -64,7 +66,7 @@ export default function GatePassPreview({ data, className = '' }) {
           <div className="field-row">
             <span className="field-label">प्रती (Recipient To):</span>
             <span className="field-value">
-              {data.recipient_name} ({data.recipient_designation || 'Staff'}) — {data.destination_substation}, {data.destination_section}
+              {data.recipient_name} ({data.recipient_designation || 'Staff'}) — {data.destination_substation || 'Substation'}{data.destination_section ? `, ${data.destination_section}` : ''}
             </span>
           </div>
 

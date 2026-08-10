@@ -11,7 +11,7 @@ export function getAuthUser() {
   try {
     const user = JSON.parse(data);
     if (user && (!user.roles || !Array.isArray(user.roles) || user.roles.length === 0)) {
-      user.roles = user.role ? [user.role] : ['super_admin', 'admin', 'gate_pass_creator'];
+      user.roles = user.role ? [user.role] : ['gate_pass_viewer'];
     }
     return user;
   } catch (e) {
@@ -88,7 +88,7 @@ export async function lookupCPF(cpfNumber) {
 
 // Role & Permission Helpers
 export function getUserRoles(user) {
-  if (!user) return ['super_admin', 'admin', 'gate_pass_creator'];
+  if (!user) return ['gate_pass_viewer'];
   if (Array.isArray(user.roles) && user.roles.length > 0) return user.roles;
   if (user.role) return [user.role];
   return ['gate_pass_viewer'];
@@ -113,21 +113,21 @@ export function canEditGatePass(user) {
 }
 
 export function canManageContractors(user) {
-  return hasAnyRole(user, ['super_admin', 'admin']);
+  return hasRole(user, 'super_admin');
 }
 
 export function canManageStations(user) {
-  return hasAnyRole(user, ['super_admin', 'admin']);
+  return hasRole(user, 'super_admin');
 }
 
 export function canManageUsers(user) {
-  return hasAnyRole(user, ['super_admin', 'admin']);
+  return hasRole(user, 'super_admin');
 }
 
 export function canManageAssets(user) {
-  return hasAnyRole(user, ['super_admin', 'admin']);
+  return hasRole(user, 'super_admin');
 }
 
 export function canViewAuditTrail(user) {
-  return hasAnyRole(user, ['super_admin', 'admin']);
+  return hasRole(user, 'super_admin');
 }
