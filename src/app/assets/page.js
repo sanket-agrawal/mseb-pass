@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import SearchInput from '@/components/ui/SearchInput';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Loader from '@/components/ui/Loader';
@@ -256,16 +257,16 @@ export default function AssetsPage() {
         </div>
       }
     >
-      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
-          <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 18, height: 18, color: 'var(--gray-400)' }} />
-          <Input
-            placeholder="Search assets by Serial No, Make, DTC Code, or Substation..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ paddingLeft: '38px' }}
-          />
-        </div>
+      <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <SearchInput
+          placeholder="Search assets by Serial No, Make, DTC Code, or Substation..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch('')}
+          count={filteredAssets.length}
+          countLabel="assets"
+          maxWidth="500px"
+        />
       </div>
 
       <Card header={`Registered Transformer Assets (${filteredAssets.length})`}>

@@ -309,15 +309,15 @@ export default function SearchableSelect({
             fontWeight: 500,
             color: '#0f172a',
             backgroundColor: disabled ? '#f1f5f9' : '#ffffff',
-            border: `1px solid ${error ? '#ef4444' : isOpen ? '#6366f1' : '#cbd5e1'}`,
-            borderRadius: '8px',
+            border: `1.5px solid ${error ? 'var(--danger-500)' : isOpen ? 'var(--primary-500)' : 'var(--gray-200)'}`,
+            borderRadius: 'var(--radius-md, 8px)',
             outline: 'none',
             textOverflow: 'ellipsis',
             overflow: 'hidden',
             whiteSpace: 'nowrap',
             boxShadow: isOpen
-              ? '0 0 0 3px rgba(99, 102, 241, 0.18)'
-              : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              ? '0 0 0 4px rgba(37, 99, 235, 0.12)'
+              : 'var(--shadow-sm)',
             transition: 'all 0.15s ease-in-out',
           }}
           className={className}

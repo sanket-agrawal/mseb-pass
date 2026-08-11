@@ -12,6 +12,7 @@ export default function Input({
   type = 'text',
   className = '',
   id,
+  style = {},
   ...props
 }) {
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
@@ -44,7 +45,8 @@ export default function Input({
               color: 'var(--gray-400)',
               display: 'flex',
               alignItems: 'center',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              zIndex: 2
             }}
           >
             <Icon style={{ width: 18, height: 18 }} />
@@ -61,11 +63,12 @@ export default function Input({
             fontSize: 'var(--text-sm)',
             color: 'var(--gray-900)',
             backgroundColor: disabled ? 'var(--gray-100)' : 'var(--bg-surface)',
-            border: `1px solid ${error ? 'var(--danger-500)' : 'var(--border-color)'}`,
+            border: `1.5px solid ${error ? 'var(--danger-500)' : 'var(--gray-200)'}`,
             borderRadius: 'var(--radius-md)',
             outline: 'none',
-            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+            transition: 'all 0.2s ease',
             boxShadow: 'var(--shadow-sm)',
+            ...style
           }}
           className={className}
           {...props}

@@ -8,6 +8,7 @@ import GatePassCard from '@/components/gatepass/GatePassCard';
 import StatusUpdateModal from '@/components/gatepass/StatusUpdateModal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import SearchInput from '@/components/ui/SearchInput';
 import Card from '@/components/ui/Card';
 import { gatePassAPI, exportAPI } from '@/lib/api';
 import { Plus, Search, LayoutGrid, List, FileSpreadsheet, RefreshCw } from 'lucide-react';
@@ -182,14 +183,14 @@ export default function GatePassDirectoryPage() {
 
           {/* Search + View Mode */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ width: 240 }}>
-              <Input
-                placeholder="Search GP#, Driver, Substation..."
-                icon={Search}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+            <SearchInput
+              placeholder="Search GP#, Driver, Substation..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClear={() => setSearch('')}
+              maxWidth="280px"
+              size="sm"
+            />
 
             <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchPasses}>
               Reload

@@ -5,14 +5,18 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
+import SearchInput from '@/components/ui/SearchInput';
 import SubstationModal from '@/components/substations/SubstationModal';
 import { getAuthUser, canManageStations } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { Plus, Edit } from 'lucide-react';
+import { officeAPI } from '@/lib/api';
+import { toast } from 'react-hot-toast';
 
 export default function SubstationsPage() {
   const router = useRouter();
   const [substations, setSubstations] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedSubstation, setSelectedSubstation] = useState(null);
@@ -108,6 +112,16 @@ export default function SubstationsPage() {
     }
   ];
 
+  const filteredSubstations = substations.filter((s) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    const name = (s.name || '').toLowerCase();
+    const type = (s.type || '').toLowerCase();
+    const div = (s.division || s.circle || '').toLowerCase();
+    const code = (s.code || '').toLowerCase();
+    return name.includes(q) || type.includes(q) || div.includes(q) || code.includes(q);
+  });
+
   return (
     <PageWrapper
       title="Substations & Offices Directory"
@@ -118,13 +132,25 @@ export default function SubstationsPage() {
         </Button>
       }
     >
+      <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <SearchInput
+          placeholder="Search substations by Name, Code, or Division..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch('')}
+          count={filteredSubstations.length}
+          countLabel="substations"
+          maxWidth="480px"
+        />
+      </div>
+
       <Card>
         <Table
           columns={columns}
-          data={substations}
+          data={filteredSubstations}
           loading={loading}
-          emptyMessage="No Substations Registered"
-          emptyDescription="Add MSEB substations to route gate passes."
+          emptyMessage="No Substations Found"
+          emptyDescription="No substations found matching your search query."
         />
       </Card>
 

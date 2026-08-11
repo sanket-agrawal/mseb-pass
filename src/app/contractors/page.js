@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import SearchInput from '@/components/ui/SearchInput';
 import Modal from '@/components/ui/Modal';
 import { getAuthUser, canManageContractors } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
@@ -16,6 +17,7 @@ import { toast } from 'react-hot-toast';
 export default function ContractorsPage() {
   const router = useRouter();
   const [contractors, setContractors] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedContractor, setSelectedContractor] = useState(null);
@@ -169,6 +171,15 @@ export default function ContractorsPage() {
     },
   ];
 
+  const filteredContractors = contractors.filter((c) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    const name = (c.name || '').toLowerCase();
+    const contact = (c.contact_person || '').toLowerCase();
+    const mobile = (c.mobile || '').toLowerCase();
+    return name.includes(q) || contact.includes(q) || mobile.includes(q);
+  });
+
   return (
     <PageWrapper
       title="Contractor Directory & Performance"
@@ -179,13 +190,25 @@ export default function ContractorsPage() {
         </Button>
       }
     >
+      <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <SearchInput
+          placeholder="Search contractors by Name, Contact Person, or Mobile..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch('')}
+          count={filteredContractors.length}
+          countLabel="contractors"
+          maxWidth="480px"
+        />
+      </div>
+
       <Card>
         <Table
           columns={columns}
-          data={contractors}
-          loading={false}
-          emptyMessage="No Contractors Registered"
-          emptyDescription="Register MSEDCL transport contractors to assign to digital gate passes."
+          data={filteredContractors}
+          loading={loading}
+          emptyMessage="No Contractors Found"
+          emptyDescription="No contractors found matching your search query."
         />
       </Card>
 

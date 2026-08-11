@@ -647,6 +647,22 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
       return;
     }
 
+    const hasDriver = Boolean(
+      formData.driver_id ||
+      (formData.driver_name && formData.driver_name.trim()) ||
+      (formData.vehicle_number && formData.vehicle_number.trim()) ||
+      (formData.driver_mobile && formData.driver_mobile.trim())
+    );
+
+    let finalStatus = actionStatus;
+    if (actionStatus === 'issued' || actionStatus === 'return_issued' || actionStatus === 'in_transit' || actionStatus === 'return_in_transit') {
+      if (hasDriver) {
+        finalStatus = formData.type === 'inward' ? 'return_in_transit' : 'in_transit';
+      } else {
+        finalStatus = formData.type === 'inward' ? 'return_issued' : 'issued';
+      }
+    }
+
     const formattedMaterials = formData.materials.map(m => {
       const isFailed = (m.job_type === 'failed') || (m.condition === 'faulty');
       const itemPayload = {
@@ -686,7 +702,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
     const payload = {
       ...formData,
       materials: formattedMaterials,
-      status: actionStatus,
+      status: finalStatus,
       // Convert empty IDs to null for optional foreign keys
       from_office_id: formData.from_office_id || null,
       to_office_id: formData.to_office_id || null,
@@ -948,8 +964,19 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
                 marginTop: '0.25rem'
               }}
             >
-              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--primary-700)', textTransform: 'uppercase' }}>
-                🚛 Driver & Vehicle Assignment (चालक व गाडी तपशील)
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--primary-700)', textTransform: 'uppercase' }}>
+                  🚛 Driver & Vehicle Assignment (चालक व गाडी तपशील)
+                </div>
+                {Boolean(formData.driver_id || (formData.driver_name && formData.driver_name.trim()) || (formData.vehicle_number && formData.vehicle_number.trim())) ? (
+                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }}>
+                    ⚡ Status on Issue: In Transit (मार्गावर)
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)' }}>
+                    Status on Issue: Issued (निर्गमित)
+                  </span>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
