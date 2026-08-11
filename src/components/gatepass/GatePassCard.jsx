@@ -1,16 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { getStatusBadgeVariant, getStatusLabel, formatShortDate } from '@/lib/utils';
 import { downloadGatePass } from '@/lib/pdfService';
-import { Truck, ArrowRight, Calendar, Eye, Download } from 'lucide-react';
+import { Truck, ArrowRight, Calendar, Eye, Download, Edit } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getAuthUser, canEditGatePass } from '@/lib/auth';
+import Link from 'next/link';
 
 export default function GatePassCard({ pass, onView, onDownload }) {
   const [downloading, setDownloading] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    setUser(getAuthUser());
+  }, []);
 
   if (!pass) return null;
 
@@ -130,6 +137,13 @@ export default function GatePassCard({ pass, onView, onDownload }) {
         <Button variant="outline" size="sm" fullWidth icon={Eye} onClick={() => onView && onView(pass)}>
           View
         </Button>
+        {canEditGatePass(user) && (
+          <Link href={`/gatepass/${pass.id}/edit`} style={{ textDecoration: 'none' }}>
+            <Button variant="outline" size="sm" icon={Edit}>
+              Edit
+            </Button>
+          </Link>
+        )}
         <Button variant="secondary" size="sm" icon={Download} loading={downloading} onClick={handlePdfClick}>
           PDF
         </Button>

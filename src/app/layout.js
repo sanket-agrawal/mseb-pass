@@ -20,16 +20,16 @@ export default function RootLayout({ children }) {
         <AppLayoutWrapper>{children}</AppLayoutWrapper>
         <Toaster
           position="top-right"
-          containerStyle={{ zIndex: 999999, top: 20, right: 20 }}
+          containerStyle={{ zIndex: 100000000, top: 20, right: 20 }}
           toastOptions={{
             duration: 4500,
             style: {
-              zIndex: 999999,
+              zIndex: 100000000,
               maxWidth: '450px',
               wordBreak: 'break-word',
-              fontSize: '13px',
+              fontSize: '13.5px',
               fontWeight: 600,
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
             },
           }}
         />

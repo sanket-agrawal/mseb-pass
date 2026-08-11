@@ -1,15 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Table from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { getStatusBadgeVariant, getStatusLabel, formatShortDate } from '@/lib/utils';
 import { downloadGatePass } from '@/lib/pdfService';
-import { Eye, Download, ArrowRight } from 'lucide-react';
+import { Eye, Download, ArrowRight, Edit } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getAuthUser, canEditGatePass } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 export default function GatePassTable({ passes = [], onView, onDownload }) {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    setUser(getAuthUser());
+  }, []);
+
   const handlePdfDownload = async (e, pass) => {
     e.stopPropagation();
     if (onDownload) {
@@ -121,10 +130,23 @@ export default function GatePassTable({ passes = [], onView, onDownload }) {
       align: 'right',
       cell: (row) => (
         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onView && onView(row); }}>
+          <Button variant="ghost" size="sm" title="View Details" onClick={(e) => { e.stopPropagation(); onView && onView(row); }}>
             <Eye style={{ width: 16, height: 16 }} />
           </Button>
-          <Button variant="ghost" size="sm" onClick={(e) => handlePdfDownload(e, row)}>
+          {canEditGatePass(user) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title="Edit Gate Pass"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/gatepass/${row.id}/edit`);
+              }}
+            >
+              <Edit style={{ width: 16, height: 16, color: 'var(--primary-600)' }} />
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" title="Download PDF" onClick={(e) => handlePdfDownload(e, row)}>
             <Download style={{ width: 16, height: 16 }} />
           </Button>
         </div>

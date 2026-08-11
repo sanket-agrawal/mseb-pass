@@ -36,7 +36,9 @@ async function request<T = any>(endpoint: string, options: RequestInit = {}): Pr
 
   const res = await fetch(`${API_BASE}${endpoint}`, config);
 
-  if (res.status === 401) {
+  const isAuthEndpoint = endpoint.startsWith('/auth');
+
+  if (res.status === 401 && !isAuthEndpoint) {
     const refreshed = await tryRefreshToken();
     if (refreshed) {
       (config.headers as any).Authorization = `Bearer ${getToken()}`;
@@ -45,8 +47,10 @@ async function request<T = any>(endpoint: string, options: RequestInit = {}): Pr
       return retryRes.json();
     }
     clearTokens();
-    if (typeof window !== 'undefined') window.location.href = '/login';
-    throw new Error('Session expired');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    throw new Error('Session expired. Please log in again.');
   }
 
   if (!res.ok) throw await parseError(res);

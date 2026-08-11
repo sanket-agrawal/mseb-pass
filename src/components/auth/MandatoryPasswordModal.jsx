@@ -78,7 +78,7 @@ export default function MandatoryPasswordModal() {
         bottom: 0,
         backgroundColor: 'rgba(15, 23, 42, 0.85)',
         backdropFilter: 'blur(8px)',
-        zIndex: 9999999,
+        zIndex: 999999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

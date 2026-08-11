@@ -155,7 +155,9 @@ export default function GatePassDetailPage({ params }) {
     { header: 'मेक (Make)', accessorKey: 'make' },
     { header: 'सि.नं. (Sr No)', accessorKey: 'serial_number', cell: (r) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{r.serial_number}</span> },
     { header: 'क्षमता (KVA)', accessorKey: 'capacity', cell: (r) => <span style={{ fontWeight: 700, color: 'var(--primary-700)' }}>{r.capacity}</span> },
+    { header: 'Job नं.', accessorKey: 'job_number', cell: (r) => <span style={{ fontFamily: 'var(--font-mono)' }}>{r.job_number || '-'}</span> },
     { header: 'गावाचे नांव', accessorKey: 'village_name' },
+    { header: 'ग्रुप नं. (Group)', accessorKey: 'group_number', cell: (r) => <span>{r.group_number || '-'}</span> },
     { header: 'DTC नं.', accessorKey: 'dtc_number', cell: (r) => <span style={{ fontFamily: 'var(--font-mono)' }}>{r.dtc_number || '-'}</span> },
     {
       header: 'स्थिती (Condition)',
@@ -366,7 +368,7 @@ export default function GatePassDetailPage({ params }) {
 
           {/* Detail Cards Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            <Card header="Recipient & Substation Details (प्रती)">
+            <Card header="1. Recipient & Route Details (प्रती व उपकेंद्र)">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>RECIPIENT (प्रती)</span>
@@ -376,67 +378,153 @@ export default function GatePassDetailPage({ params }) {
                 </div>
 
                 <div>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>DESTINATION SUBSTATION</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>ORIGIN OFFICE (कोणाकडून)</span>
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--gray-800)' }}>
+                    {pass.from_office?.name || pass.fromSubstation || 'Sub Division Dondaicha'}
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>DESTINATION SUBSTATION (जायचे ठिकाण)</span>
                   <div style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--primary-700)' }}>
                     {pass.destination_substation}
                   </div>
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)' }}>
-                    Section: {pass.destination_section} • Division: {pass.destination_division}
+                    Section: {pass.destination_section || '-'} • Division: {pass.destination_division || '-'}
                   </div>
                 </div>
               </div>
             </Card>
 
-            <Card header="Transport & Driver Information (गाडी नं.)">
+            <Card header="2. Transport & Contractor Details (चालक व गाडी)">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>DRIVER NAME</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>DRIVER NAME & PHONE</span>
                   <div style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--gray-900)' }}>
                     {pass.driver_name || 'TBD'}
                   </div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)' }}>Phone: {pass.driver_mobile || 'N/A'}</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)' }}>
+                    Phone: {pass.driver_mobile || 'N/A'} {pass.driver_id ? `• Driver ID: ${pass.driver_id}` : ''}
+                  </div>
                 </div>
 
                 <div>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>VEHICLE REGISTRATION</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>VEHICLE REGISTRATION NUMBER</span>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--gray-800)' }}>
                     {pass.vehicle_number || 'TBD'}
                   </div>
                 </div>
 
                 <div>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>CONTRACTOR (ठेकेदारास)</span>
-                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-700)' }}>
-                    {pass.contractor_name || 'MSEDCL'}
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>CONTRACTOR / VENDOR (ठेकेदारास)</span>
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--gray-800)' }}>
+                    {pass.contractor_name || pass.contractor?.company_name || pass.contractor?.name || 'MSEDCL Partner'}
                   </div>
                 </div>
               </div>
             </Card>
           </div>
 
-          <Card header="Material / Transformer Items (मालाचे वर्णन)" style={{ marginBottom: '1.5rem' }}>
+          {/* Transformer & Material Table */}
+          <Card header="3. Material / Transformer Details & Technical Job Records (मालाचे वर्णन व तांत्रिक नोंद)" style={{ marginBottom: '1.5rem' }}>
             <Table
               columns={materialColumns}
               data={pass.materials || []}
               emptyMessage="No material details recorded"
             />
+
+            {/* Detailed Technical Job Records for each material item */}
+            {pass.materials && pass.materials.map((m, index) => {
+              const hasFailedRecord = Boolean(m.failed_job_record);
+              const hasHealthyRecord = Boolean(m.healthy_job_record);
+
+              return (
+                <div
+                  key={m.id || index}
+                  style={{
+                    marginTop: '1.25rem',
+                    padding: '1rem 1.25rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--gray-50)',
+                    border: '1px solid var(--gray-200)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--gray-900)' }}>
+                      Item #{m.sr_no || index + 1}: {m.capacity} {m.make} (Sr. No: {m.serial_number || 'N/A'})
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', fontSize: 'var(--text-xs)' }}>
+                      {m.job_number && <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>Job #: {m.job_number}</span>}
+                      {m.group_number && <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: 600 }}>Group #: {m.group_number}</span>}
+                      {m.village_name && <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 600 }}>Village: {m.village_name}</span>}
+                    </div>
+                  </div>
+
+                  {/* Failed Job Record Box */}
+                  {hasFailedRecord && (
+                    <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 14px' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#991b1b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>⚠️ Failed Job Technical Inspection Record (जळालेले/दुरुस्तीयोग्य रोहित्र नोंद)</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', fontSize: 'var(--text-xs)' }}>
+                        <div><strong style={{ color: '#7f1d1d' }}>GP Reading:</strong> {m.failed_job_record.gp_reading || '-'}</div>
+                        <div><strong style={{ color: '#7f1d1d' }}>Fresh Reading:</strong> {m.failed_job_record.fresh_reading || '-'}</div>
+                        <div><strong style={{ color: '#7f1d1d' }}>Oil Drain Sr. No:</strong> {m.failed_job_record.oil_drain_serial_number || '-'}</div>
+                        <div><strong style={{ color: '#7f1d1d' }}>Recorded By CPF:</strong> {m.failed_job_record.recorded_by_cpf || pass.line_staff_cpf || '-'}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Healthy Job Record Box */}
+                  {hasHealthyRecord && (
+                    <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 14px' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#166534', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>✅ Healthy / Repaired Job Technical Test Certificate (सुस्थिती रोहित्र चाचणी नोंद)</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', fontSize: 'var(--text-xs)' }}>
+                        <div><strong style={{ color: '#14532d' }}>R-Phase Reading:</strong> {m.healthy_job_record.ryb_r_reading || '-'}</div>
+                        <div><strong style={{ color: '#14532d' }}>Y-Phase Reading:</strong> {m.healthy_job_record.ryb_y_reading || '-'}</div>
+                        <div><strong style={{ color: '#14532d' }}>B-Phase Reading:</strong> {m.healthy_job_record.ryb_b_reading || '-'}</div>
+                        <div><strong style={{ color: '#14532d' }}>Spark Test:</strong> <span style={{ textTransform: 'uppercase', fontWeight: 700 }}>{m.healthy_job_record.spark_test || 'OK'}</span></div>
+                        <div><strong style={{ color: '#14532d' }}>Tested By CPF:</strong> {m.healthy_job_record.tested_by_cpf || pass.line_staff_cpf || '-'}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {m.remarks && (
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)', fontStyle: 'italic' }}>
+                      <strong>Item Note:</strong> {m.remarks}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </Card>
 
+          {/* Line Staff & Authorities Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            <Card header="Destination Line Staff & Verification">
+            <Card header="4. Line Staff & Issuing Authority Details">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 'var(--text-sm)' }}>
-                <div><strong>Staff Name:</strong> {pass.line_staff_name || '-'}</div>
-                <div><strong>Mobile Phone:</strong> {pass.line_staff_mobile || '-'}</div>
-                <div><strong>CPF Number:</strong> {pass.line_staff_cpf || '-'}</div>
+                <div><strong>Inspection Staff Name:</strong> {pass.line_staff_name || '-'}</div>
+                <div><strong>Staff Mobile Phone:</strong> {pass.line_staff_mobile || '-'}</div>
+                <div><strong>Staff CPF Number:</strong> {pass.line_staff_cpf || '-'}</div>
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 8, marginTop: 4 }}>
-                  <strong>Issued By (Sender):</strong> {pass.sender_name} ({pass.sender_designation})
+                  <strong>Issued By (Sender / देणारे):</strong> {pass.sender_name} ({pass.sender_designation || 'SDO'}) {pass.sender_cpf ? `• CPF: ${pass.sender_cpf}` : ''}
                 </div>
+                {pass.receiver_name && (
+                  <div>
+                    <strong>Received By (Receiver / घेणारे):</strong> {pass.receiver_name} ({pass.receiver_designation || 'AE'})
+                  </div>
+                )}
               </div>
             </Card>
 
-            <Card header="Check & Condition Certificate (शेरा)">
+            <Card header="5. Check & Condition Certificate (शेरा)">
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-800)', whiteSpace: 'pre-line', lineHeight: 1.6 }}>
-                {pass.remarks}
+                {pass.remarks || 'वरील सर्व रोहित्र तपासुन बघीतले त्यांचे LT व HT Rods सुस्थितीत आहेत. तसेच रोहित्रामाधुन Oil Leakage नाही.'}
               </div>
             </Card>
           </div>
