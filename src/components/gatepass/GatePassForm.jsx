@@ -14,20 +14,12 @@ import { useRouter } from 'next/navigation';
 
 const DEFAULT_MARATHI_REMARKS = 'वरील सर्व रोहित्र तपासुन बघीतले त्यांचे LT व HT Rods सुस्थितीत आहेत. तसेच रोहित्रामाधुन Oil Leakage नाही.';
 
-const DEFAULT_CPF_OPTIONS = [
-  { value: '2645050', label: '2645050 - Rohit Salunkhe', subtext: 'Rohit Salunkhe (Line Staff / S/dn Dondaicha) • Mob: 9427166630', data: { cpf_number: '2645050', full_name: 'Rohit Salunkhe', mobile: '9427166630' } },
-  { value: '1182741', label: '1182741 - Junior Engineer Nardana', subtext: 'Junior Engineer (Nardana S/stn) • Mob: 9421512345', data: { cpf_number: '1182741', full_name: 'Junior Engineer Nardana', mobile: '9421512345' } },
-  { value: '3341920', label: '3341920 - S. K. Mahajan', subtext: 'S. K. Mahajan (Shewade S/stn) • Mob: 9881122334', data: { cpf_number: '3341920', full_name: 'S. K. Mahajan', mobile: '9881122334' } },
-  { value: '9764433', label: '9764433 - P. B. Chaudhari', subtext: 'P. B. Chaudhari (Vikhran Section) • Mob: 9764433221', data: { cpf_number: '9764433', full_name: 'P. B. Chaudhari', mobile: '9764433221' } },
-  { value: '9420099', label: '9420099 - V. R. Ahire', subtext: 'V. R. Ahire (Bahmne Section) • Mob: 9420099887', data: { cpf_number: '9420099', full_name: 'V. R. Ahire', mobile: '9420099887' } },
-];
-
 export default function GatePassForm({ initialData = null, linkedPass = null, isEditMode = false, isSubmitting = false, onSubmit }) {
   const router = useRouter();
   const { drivers, substations } = useDrivers();
 
   const [dtcOptions, setDtcOptions] = useState([]);
-  const [cpfOptions, setCpfOptions] = useState(DEFAULT_CPF_OPTIONS);
+  const [cpfOptions, setCpfOptions] = useState([]);
   const [contractorOptions, setContractorOptions] = useState([]);
   const [vendorOptions, setVendorOptions] = useState([]);
   const [officeOptions, setOfficeOptions] = useState([]);
@@ -248,29 +240,29 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
             return combined;
           });
         }
-        // Load all employees for CPF lookup options
-        const empRes = await userAPI.list({ limit: 200 });
+        // Load all employees from database for CPF lookup options
+        const empRes = await userAPI.list({ limit: 500 });
         const empList = empRes?.data?.users || empRes?.data || [];
         if (Array.isArray(empList) && empList.length > 0) {
           const vendorList = [];
           const cpfList = [];
 
           empList.forEach(u => {
-            const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim();
+            const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'Official';
             const cpfNum = (u.cpf_number || '').replace(/^CPF-/, '');
 
             // Separate vendors for vendor dropdown
-            if (u.role === 'vendor') {
+            if (u.role === 'contractor') {
               vendorList.push({
                 value: u.id,
-                label: fullName || u.company_name || 'Vendor',
+                label: fullName || u.company_name || 'Contractor',
                 subtext: `${u.company_name || ''} | Mob: ${u.mobile || 'N/A'} | CPF: ${cpfNum || 'N/A'}`,
                 data: u
               });
             }
 
-            // All non-vendor users go into CPF options
-            if (u.role !== 'vendor') {
+            // Only employees who have a valid CPF number go into CPF options
+            if ((u.role !== 'vendor' || u.role !== 'contractor' || u.role !== 'super_admin') && cpfNum) {
               cpfList.push({
                 value: cpfNum,
                 label: `${cpfNum} - ${fullName}`,
@@ -281,7 +273,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
           });
 
           if (vendorList.length > 0) setVendorOptions(vendorList);
-          if (cpfList.length > 0) setCpfOptions(cpfList);
+          setCpfOptions(cpfList);
         }
       } catch (err) {
         console.log('Dynamic options note:', err?.message);
