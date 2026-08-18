@@ -47,7 +47,7 @@ export default function Sidebar() {
   };
 
   const officeName = user?.office?.name || user?.branch || 'Sub Division Dondaicha';
-  const mandalName = user?.mandal || user?.circle || user?.office?.mandal || user?.office?.circle || 'Dhule Circle (धुळे मंडल)';
+  const mandalName = user?.mandal || user?.circle || user?.office?.mandal || user?.office?.circle || 'Dhule Circle (धुळे मंडळ)';
   const divisionName = user?.division || user?.office?.division || 'Dhule Division (धुळे विभाग)';
 
   const navItems = [

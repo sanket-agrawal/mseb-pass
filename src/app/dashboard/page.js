@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
+import React, { useState, useMemo, useEffect } from 'react';
 import PageWrapper from '@/components/layout/PageWrapper';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import DateRangeSelector from '@/components/ui/DateRangeSelector';
 import StatsCard from '@/components/dashboard/StatsCard';
 import BarChart from '@/components/dashboard/BarChart';
 import DonutChart from '@/components/dashboard/DonutChart';
 import HorizontalBar from '@/components/dashboard/HorizontalBar';
 import GatePassTable from '@/components/gatepass/GatePassTable';
-import DateRangeSelector from '@/components/ui/DateRangeSelector';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
 import { useGatePass } from '@/hooks/useGatePass';
+import { computeStats } from '@/lib/analytics';
 import { dashboardAPI, exportAPI } from '@/lib/api';
 import { getAuthUser } from '@/lib/auth';
-import { computeStats } from '@/lib/analytics';
+import Link from 'next/link';
 import {
   FileText,
   Truck,
@@ -56,8 +56,8 @@ export default function DashboardPage() {
       return {
         ...computed,
         total: liveStats.total ?? computed.total,
-        activeInTransit: liveStats.in_transit ?? computed.activeInTransit,
-        pendingReturns: liveStats.pending_returns ?? computed.pendingReturns,
+        issuedCount: liveStats.issued ?? computed.issuedCount,
+        creditedCount: liveStats.credited ?? computed.creditedCount,
         completedCount: liveStats.completed ?? computed.completedCount,
         recentPasses: liveStats.recent_passes?.length ? liveStats.recent_passes : computed.recentPasses,
       };
@@ -70,7 +70,7 @@ export default function DashboardPage() {
   };
 
   const handleDownloadPdf = (pass) => {
-    toast.success(`Opening PDF preview for ${pass.display_id || pass.id}`);
+    toast.success(`Opening PDF for ${pass.display_id || pass.id}`);
   };
 
   const handleQuickExport = async () => {
@@ -136,45 +136,45 @@ export default function DashboardPage() {
       >
         <StatsCard
           title="Total Passes"
-          marathiTitle="एकूण गेट पास"
+          marathiTitle="एकूण गेटपास"
           value={stats.total}
           icon={FileText}
           color="primary"
           trend="Total recorded passes"
         />
         <StatsCard
-          title="In Transit"
-          marathiTitle="मार्गावर असणारे"
-          value={stats.activeInTransit}
+          title="Issued"
+          marathiTitle="निर्गमित (Issued)"
+          value={stats.issuedCount}
           icon={Truck}
-          color="warning"
-          trend="Active transport movements"
+          color="accent"
+          trend="Active outward passes"
         />
         <StatsCard
-          title="Pending Returns"
-          marathiTitle="परतावा प्रलंबित"
-          value={stats.pendingReturns}
+          title="Credited"
+          marathiTitle="जमा (Credited)"
+          value={stats.creditedCount}
           icon={RotateCcw}
-          color="accent"
-          trend="Awaiting inward return pass"
+          color="warning"
+          trend="Inward returned transformers"
         />
         <StatsCard
           title="Completed"
-          marathiTitle="पूर्ण झालेले पास"
+          marathiTitle="पूर्ण (Completed)"
           value={stats.completedCount}
           icon={CheckCircle}
           color="success"
-          trend="Delivered and closed"
+          trend="Delivered & fully closed"
         />
       </div>
 
       {/* Charts Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem', marginBottom: '1.75rem' }}>
-        <Card header="Monthly Movement Trend (महिनानिहाय जावक व आवक)">
+        <Card header="Monthly Movement Trend (मासिक हालचाल अहवाल)">
           <BarChart data={stats.monthlyTrend} />
         </Card>
 
-        <Card header="Lifecycle Status Distribution (स्थिती विभागणी)">
+        <Card header="Lifecycle Status Distribution (स्थिती विवरण)">
           <DonutChart segments={stats.statusDistribution} />
         </Card>
       </div>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Contractor Performance Leaderboard */}
-      <Card header="Contractor Performance Leaderboard (ठेकेदार कामगिरी व गेट पास नोंद)">
+      <Card header="Contractor Performance Leaderboard (कंत्राटदार कार्य अहवाल)">
         <HorizontalBar data={stats.contractorPerformance || stats.driverPerformance} />
       </Card>
     </PageWrapper>

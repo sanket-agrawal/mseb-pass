@@ -8,20 +8,20 @@ export function filterPassesByPreset(passes, preset) {
   const todayStr = now.toISOString().split('T')[0];
 
   if (preset === 'today') {
-    return passes.filter(p => p.date === todayStr);
+    return passes.filter(p => (p.date ? p.date.split('T')[0] : '') === todayStr);
   }
 
   if (preset === 'week') {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(now.getDate() - 7);
-    return passes.filter(p => new Date(p.date) >= oneWeekAgo);
+    return passes.filter(p => new Date(p.date || p.created_at) >= oneWeekAgo);
   }
 
   if (preset === 'month') {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     return passes.filter(p => {
-      const d = new Date(p.date);
+      const d = new Date(p.date || p.created_at);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
   }
@@ -29,7 +29,7 @@ export function filterPassesByPreset(passes, preset) {
   if (preset === 'last3months') {
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(now.getMonth() - 3);
-    return passes.filter(p => new Date(p.date) >= threeMonthsAgo);
+    return passes.filter(p => new Date(p.date || p.created_at) >= threeMonthsAgo);
   }
 
   return passes;
@@ -42,18 +42,9 @@ export function computeStats(allPasses = [], datePreset = 'all') {
 
   // Summary Metrics
   const total = filteredPasses.length;
-  
-  const activeInTransit = filteredPasses.filter(
-    p => p.status === 'in_transit' || p.status === 'return_in_transit'
-  ).length;
-
-  const pendingReturns = filteredPasses.filter(
-    p => p.type === 'outward' && (p.status === 'delivered' || p.status === 'completed') && !p.return_gatepass_id
-  ).length;
-
-  const completedCount = filteredPasses.filter(
-    p => p.status === 'completed' || p.status === 'delivered'
-  ).length;
+  const issuedCount = filteredPasses.filter(p => p.status === 'issued').length;
+  const creditedCount = filteredPasses.filter(p => p.status === 'credited').length;
+  const completedCount = filteredPasses.filter(p => p.status === 'completed').length;
 
   // Monthly Trend (Last 6 months)
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -70,24 +61,20 @@ export function computeStats(allPasses = [], datePreset = 'all') {
       return pDate.getMonth() === mIdx && pDate.getFullYear() === year;
     }).length;
 
-    monthlyTrend.push({ label, value: count || (i === 0 ? total : Math.floor(Math.random() * 8) + 4) });
+    monthlyTrend.push({ label, value: count || (i === 0 ? total : 0) });
   }
 
   // Status Distribution for Donut Chart
   const statusCounts = {};
   filteredPasses.forEach(p => {
-    statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
+    const st = p.status || 'issued';
+    statusCounts[st] = (statusCounts[st] || 0) + 1;
   });
 
   const statusColors = {
-    draft: '#94a3b8',
     issued: '#3b82f6',
-    in_transit: '#f59e0b',
-    delivered: '#22c55e',
-    return_issued: '#0ea5e9',
-    return_in_transit: '#d97706',
-    completed: '#16a34a',
-    cancelled: '#ef4444'
+    credited: '#f59e0b',
+    completed: '#10b981',
   };
 
   const statusDistribution = Object.keys(statusCounts).map(status => ({
@@ -111,7 +98,7 @@ export function computeStats(allPasses = [], datePreset = 'all') {
   // Contractor Performance Leaderboard
   const contractorCounts = {};
   filteredPasses.forEach(p => {
-    const contractor = p.contractor_name || p.contractorName || 'M/S Standard Electrotech Service';
+    const contractor = p.contractor_name || p.contractor?.contractor_firm || p.contractor?.first_name || 'Direct MSEB';
     contractorCounts[contractor] = (contractorCounts[contractor] || 0) + 1;
   });
 
@@ -125,29 +112,16 @@ export function computeStats(allPasses = [], datePreset = 'all') {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  // Capacity Distribution
-  const capCounts = {};
-  filteredPasses.forEach(p => {
-    const cap = p.materials?.[0]?.capacity || p.transformerCapacity || '100 KVA';
-    capCounts[cap] = (capCounts[cap] || 0) + 1;
-  });
-
-  const capacityDistribution = Object.keys(capCounts).map(cap => ({
-    label: cap,
-    count: capCounts[cap]
-  }));
-
   return {
     total,
-    activeInTransit,
-    pendingReturns,
+    issuedCount,
+    creditedCount,
     completedCount,
     monthlyTrend,
     statusDistribution,
     topSubstations,
     contractorPerformance,
     driverPerformance: contractorPerformance,
-    capacityDistribution,
     recentPasses: filteredPasses.slice(0, 5)
   };
 }

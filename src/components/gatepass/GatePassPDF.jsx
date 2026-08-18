@@ -7,7 +7,7 @@ const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 10,
-    backgroundColor: '#FFF9C4', // Physical yellow gate pass paper color
+    backgroundColor: '#FFF9C4',
     fontFamily: 'Helvetica'
   },
   container: {
@@ -98,63 +98,66 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#F5E6A3',
+    backgroundColor: '#e2e8f0',
     borderBottomWidth: 1,
     borderBottomColor: '#334155',
-    paddingVertical: 5
+    padding: 4,
+    fontWeight: 'bold',
+    fontSize: 8.5
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 0.5,
-    borderBottomColor: '#cbd5e1',
-    paddingVertical: 5,
-    alignItems: 'center'
+    borderBottomColor: '#94a3b8',
+    padding: 4,
+    fontSize: 8.5
   },
-  colSr: { width: '8%', textAlign: 'center', fontSize: 8.5 },
-  colMake: { width: '15%', paddingLeft: 4, fontSize: 8.5 },
-  colSrNo: { width: '18%', paddingLeft: 4, fontSize: 8.5, fontWeight: 'bold' },
-  colJob: { width: '14%', paddingLeft: 4, fontSize: 8.5 },
-  colCap: { width: '15%', paddingLeft: 4, fontSize: 8.5, fontWeight: 'bold' },
-  colVillage: { width: '18%', paddingLeft: 4, fontSize: 8.5 },
-  colRemarks: { width: '12%', paddingLeft: 4, fontSize: 8.5 },
-
+  colSr: { width: '6%', textAlign: 'center' },
+  colMake: { width: '16%' },
+  colSrNo: { width: '18%', fontWeight: 'bold' },
+  colJob: { width: '14%' },
+  colCap: { width: '14%', fontWeight: 'bold' },
+  colVillage: { width: '20%' },
+  colRemarks: { width: '12%' },
   staffSection: {
-    marginTop: 8,
-    padding: 8,
-    backgroundColor: '#FFFDE7',
-    borderWidth: 0.5,
-    borderColor: '#e2e8f0',
-    borderRadius: 4
+    backgroundColor: '#e2e8f0',
+    padding: 6,
+    borderRadius: 3,
+    marginVertical: 6,
   },
   remarksBox: {
-    marginTop: 8,
-    padding: 8,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    backgroundColor: '#FFFFFF',
-    fontSize: 9,
-    lineHeight: 1.4
+    borderColor: '#94a3b8',
+    padding: 8,
+    borderRadius: 4,
+    marginVertical: 6,
+    fontSize: 8.5,
+    color: '#1e293b'
   },
   signatures: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 'auto',
-    paddingTop: 26
+    marginTop: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#64748b'
   },
   sigBlock: {
     width: '45%',
-    textAlign: 'center'
+    alignItems: 'center'
   },
   sigLine: {
-    borderTopWidth: 1,
-    borderTopColor: '#0f172a',
-    paddingTop: 4,
-    fontSize: 9,
-    fontWeight: 'bold'
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+    width: '100%',
+    textAlign: 'center',
+    paddingBottom: 20,
+    fontWeight: 'bold',
+    fontSize: 9
   },
   footer: {
-    marginTop: 12,
-    paddingTop: 6,
+    marginTop: 'auto',
+    paddingTop: 8,
     borderTopWidth: 0.5,
     borderTopColor: '#cbd5e1',
     flexDirection: 'row',
@@ -164,7 +167,6 @@ const styles = StyleSheet.create({
   }
 });
 
-// Helper to strip non-Latin / Devanagari characters so Helvetica font never throws WinAnsiEncoding error
 function sanitizeText(str) {
   if (!str) return '';
   return String(str).replace(/[^\x00-\x7F]/g, '').trim();
@@ -184,7 +186,7 @@ export function GatePassPDF({ data }) {
   const remarksStr = sanitizeText(data.remarks) || 'Inspected all transformer units. LT and HT Rods in good condition. No oil leakage.';
 
   return (
-    <Document title={`MSEB_GatePass_${data.id}`}>
+    <Document title={`MSEB_GatePass_${data.display_id || data.id}`}>
       <Page size="A4" style={[styles.page, { backgroundColor: pageBg }]}>
         <View style={[styles.container, { borderColor }]}>
           {/* Header */}
@@ -203,10 +205,10 @@ export function GatePassPDF({ data }) {
           {/* Info Row: Serial & Date */}
           <View style={styles.infoRow}>
             <Text>
-              Serial No. (Kramank): <Text style={styles.boldText}>{sanitizeText(data.serial_number || data.id)}</Text>
+              Serial No. (Kramank): <Text style={styles.boldText}>{sanitizeText(data.display_id || data.serial_number || data.id)}</Text>
             </Text>
             <Text>
-              Date (Dinank): <Text style={styles.boldText}>{data.date}</Text>
+              Date (Dinank): <Text style={styles.boldText}>{data.date ? String(data.date).split('T')[0] : ''}</Text>
             </Text>
           </View>
 
@@ -245,7 +247,7 @@ export function GatePassPDF({ data }) {
               <Text style={styles.colMake}>Make</Text>
               <Text style={styles.colSrNo}>Sr. No.</Text>
               <Text style={styles.colJob}>Job No.</Text>
-              <Text style={styles.colCap}>Capacity (KVA)</Text>
+              <Text style={styles.colCap}>Capacity</Text>
               <Text style={styles.colVillage}>Village / DTC</Text>
               <Text style={styles.colRemarks}>Condition</Text>
             </View>
@@ -264,7 +266,7 @@ export function GatePassPDF({ data }) {
                 {m.failed_job_record && (
                   <View style={{ backgroundColor: '#fef2f2', padding: 4, paddingLeft: 10 }}>
                     <Text style={{ fontSize: 7.5, color: '#991b1b' }}>
-                      Failed Job Record: GP: {sanitizeText(m.failed_job_record.gp_reading) || 'N/A'} | Fresh: {sanitizeText(m.failed_job_record.fresh_reading) || 'N/A'} | Oil Drain Sr: {sanitizeText(m.failed_job_record.oil_drain_serial_number) || 'N/A'} | Recorded By CPF: {sanitizeText(m.failed_job_record.recorded_by_cpf) || 'N/A'}
+                      Failed Job Record: Warranty: {sanitizeText(m.failed_job_record.warranty) || 'GP'} | Oil Drain Sr: {sanitizeText(m.failed_job_record.oil_drain_serial_number) || 'N/A'} | Recorded By CPF: {sanitizeText(m.failed_job_record.recorded_by_cpf) || 'N/A'}
                     </Text>
                   </View>
                 )}
@@ -311,7 +313,7 @@ export function GatePassPDF({ data }) {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text>Digital Gate Pass ID: {data.id}</Text>
+            <Text>Digital Gate Pass ID: {data.display_id || data.id}</Text>
             <Text>Generated: {new Date().toISOString().split('T')[0]}</Text>
             <Text>Sub Division Dondaicha (Dhule)</Text>
           </View>

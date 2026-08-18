@@ -41,14 +41,14 @@ export default function GatePassPreview({ data, className = '' }) {
               border: isOutward ? '1px solid var(--accent-200)' : '1px solid var(--pink-200)'
             }}
           >
-            गेट पास ({isOutward ? 'जावक / OUTWARD' : 'आवक / INWARD'})
+            गेटपास ({isOutward ? 'जावक / OUTWARD' : 'आवक / INWARD'})
           </div>
         </div>
 
         {/* Info Row: Serial & Date */}
         <div className="preview-info-row">
           <div>
-            <span style={{ color: '#475569', fontWeight: 600 }}>क्रमांक (Gate Pass ID): </span>
+            <span style={{ color: '#475569', fontWeight: 600 }}>गेटपास क्र. (Gate Pass ID): </span>
             <span style={{ fontWeight: 800, color: '#0f172a', textDecoration: 'underline' }}>
               {data.display_id || data.serial_number || data.id}
             </span>
@@ -64,32 +64,32 @@ export default function GatePassPreview({ data, className = '' }) {
         {/* Form Fields Section */}
         <div className="preview-fields">
           <div className="field-row">
-            <span className="field-label">प्रती (Recipient To):</span>
+            <span className="field-label">प्रति (Recipient To):</span>
             <span className="field-value">
               {data.recipient_name} ({data.recipient_designation || 'Staff'}) — {data.destination_substation || 'Substation'}{data.destination_section ? `, ${data.destination_section}` : ''}
             </span>
           </div>
 
           <div className="field-row">
-            <span className="field-label">गाडी नं. (Vehicle No.):</span>
+            <span className="field-label">गाडी क्र. (Vehicle No.):</span>
             <span className="field-value font-mono">{data.vehicle_number || 'TBD'}</span>
           </div>
 
           <div className="field-row">
-            <span className="field-label">सामान आणणाऱ्याचे नांव (Driver):</span>
+            <span className="field-label">वाहन चालक (Driver):</span>
             <span className="field-value">
               {data.driver_name || 'TBD'} {data.driver_mobile ? `(Phone: ${data.driver_mobile})` : ''}
             </span>
           </div>
 
           <div className="field-row">
-            <span className="field-label">विजखात्यास/ठेकेदारास (Contractor):</span>
+            <span className="field-label">कंत्राटदार (Contractor):</span>
             <span className="field-value">{data.contractor_name || '-'}</span>
           </div>
 
           {(data.linked_gatepass_id || data.linked_gatepass?.display_id) && (
             <div className="field-row">
-              <span className="field-label">संलग्न गेट पास (Linked Pass Ref):</span>
+              <span className="field-label">संलग्न गेटपास (Linked Pass Ref):</span>
               <span className="field-value" style={{ fontWeight: 800, color: 'var(--primary-700)' }}>
                 {data.linked_gatepass?.display_id || data.linked_gatepass_id}
               </span>
@@ -99,18 +99,18 @@ export default function GatePassPreview({ data, className = '' }) {
 
         {/* Material Table Header */}
         <div style={{ textAlign: 'center', fontWeight: 700, fontSize: '0.85rem', color: '#1e293b', margin: '14px 0 6px 0' }}>
-          ✻ मालाचे वर्णन / ट्रान्सफार्मरचे वर्णन ✻
+          साहित्याचा तपशील / रोहित्र विवरण (Material Details)
         </div>
 
         <table className="preview-table">
           <thead>
             <tr>
-              <th style={{ width: '40px' }}>अ.नं.</th>
-              <th>मेक (Make)</th>
-              <th>सि.नं. (Sr No)</th>
-              <th>जॉब नं.</th>
+              <th style={{ width: '40px' }}>अ.क्र.</th>
+              <th>कंपनी (Make)</th>
+              <th>अनुक्रमांक (Sr No)</th>
+              <th>जॉब क्र.</th>
               <th>क्षमता (KVA)</th>
-              <th>गावाचे नांव / DTC नं.</th>
+              <th>गाव / DTC क्र.</th>
               <th>स्थिती</th>
             </tr>
           </thead>
@@ -125,14 +125,14 @@ export default function GatePassPreview({ data, className = '' }) {
                   <td style={{ fontWeight: 700, color: 'var(--primary-800)' }}>{m.capacity || '-'}</td>
                   <td>{m.village_name} {m.dtc_number ? `(DTC: ${m.dtc_number})` : ''}</td>
                   <td style={{ fontWeight: 600 }}>
-                    {m.condition === 'faulty' ? 'दूषित/जळालेले' : m.condition === 'repaired' ? 'दुरुस्त' : 'नवीन'}
+                    {m.condition === 'faulty' ? 'नादुरुस्त (Faulty)' : m.condition === 'repaired' ? 'दुरुस्त (Repaired)' : 'चांगले'}
                   </td>
                 </tr>
                 {/* Render Failed Job Record if present */}
                 {m.failed_job_record && (
                   <tr>
-                    <td colSpan={7} style={{ backgroundColor: '#fef2f2', padding: '6px 12px', fontSize: '11px', color: '#991b1b' }}>
-                      ⚠️ <strong>Failed Job Record:</strong> GP Reading: {m.failed_job_record.gp_reading || 'N/A'} | Fresh Reading: {m.failed_job_record.fresh_reading || 'N/A'} | Oil Drain Serial: {m.failed_job_record.oil_drain_serial_number || 'N/A'} | Recorded By CPF: {m.failed_job_record.recorded_by_cpf}
+                    <td colSpan={7} style={{ backgroundColor: '#fffbeb', padding: '6px 12px', fontSize: '11px', color: '#92400e' }}>
+                      ⚠️ <strong>Failed Job Record:</strong> Warranty: <strong>{m.failed_job_record.warranty || 'GP'}</strong> | Oil Drain Serial: {m.failed_job_record.oil_drain_serial_number || 'N/A'} | Recorded By CPF: {m.failed_job_record.recorded_by_cpf}
                     </td>
                   </tr>
                 )}
@@ -157,21 +157,21 @@ export default function GatePassPreview({ data, className = '' }) {
 
         {/* Condition Remarks */}
         <div className="preview-remarks">
-          <strong>टिपणी / Condition Certificate: </strong>
+          <strong>शेरा / Condition Certificate: </strong>
           <span>{data.remarks}</span>
         </div>
 
         {/* Signatures */}
         <div className="preview-signatures">
           <div className="sig-column">
-            <div className="sig-line">देणाऱ्याची सही व हुद्दा (Sender Signature)</div>
+            <div className="sig-line">देणाऱ्याची स्वाक्षरी (Sender Signature)</div>
             <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: 4 }}>
               {data.sender_name || 'Sender'} ({data.sender_designation || 'Officer'})
             </div>
           </div>
 
           <div className="sig-column">
-            <div className="sig-line">घेणाऱ्याची सही व हुद्दा (Receiver Signature)</div>
+            <div className="sig-line">घेणाऱ्याची स्वाक्षरी (Receiver Signature)</div>
             <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: 4 }}>
               {data.receiver_name || data.line_staff_name || 'Receiver Signature'}
             </div>

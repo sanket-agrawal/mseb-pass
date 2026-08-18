@@ -1,485 +1,316 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import SearchInput from '@/components/ui/SearchInput';
+import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
-import Loader from '@/components/ui/Loader';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { assetAPI, officeAPI } from '@/lib/api';
-import { getAuthUser, canManageAssets } from '@/lib/auth';
-import { Boxes, Plus, Search, Upload, Download, Edit3, ShieldAlert, Cpu } from 'lucide-react';
+import { TRANSFORMER_CAPACITY, ASSET_PHASE } from '@/lib/constants';
 import { toast } from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
-import * as XLSX from 'xlsx';
-
-const CAPACITY_OPTIONS = ['15 KVA', '25 KVA', '63 KVA', '100 KVA', '200 KVA', '315 KVA', '500 KVA'];
-const CONDITION_OPTIONS = [
-  { value: 'good', label: 'Good (सुस्थितीत)' },
-  { value: 'faulty', label: 'Faulty / Damaged (दुरुस्तीयोग्य)' },
-  { value: 'repaired', label: 'Repaired (दुरुस्त केलेले)' },
-  { value: 'scrap', label: 'Scrap (स्क्रॅप/अदुरुस्तीयोग्य)' },
-];
+import { Plus, Edit2, Zap, MapPin } from 'lucide-react';
 
 export default function AssetsPage() {
-  const router = useRouter();
-  const [currentUser, setCurrentUser] = useState(null);
   const [assets, setAssets] = useState([]);
   const [offices, setOffices] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
 
-  // Modal States
-  const [modalOpen, setModalOpen] = useState(false);
-  const [bulkModalOpen, setBulkModalOpen] = useState(false);
-  const [editingAsset, setEditingAsset] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [importing, setImporting] = useState(false);
-
-  // Form State
   const [formData, setFormData] = useState({
-    serial_number: '',
+    asset_code: '',
+    type: 'Transformer',
     make: '',
-    capacity_kva: '100 KVA',
-    dtc_code: '',
-    location_substation: '',
+    serial_number: '',
+    capacity: '63 KVA',
+    dtc_number: '',
+    village_name: '',
+    location_office_id: '',
     condition: 'good',
-    office_id: '',
+    status: 'in_stock',
+    latitude: '',
+    longitude: '',
+    phase: 'THREE',
   });
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [assetRes, offRes] = await Promise.all([
+        assetAPI.list({ search, limit: 100 }),
+        officeAPI.list()
+      ]);
+      setAssets(assetRes.data || assetRes.assets || []);
+      setOffices(offRes.data || offRes.offices || []);
+    } catch (err) {
+      toast.error('Failed to load assets');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const authUser = getAuthUser();
-    setCurrentUser(authUser);
-    if (authUser && !canManageAssets(authUser)) {
-      toast.error('Access restricted to Super Admin role');
-      router.push('/dashboard');
-      return;
-    }
     loadData();
-  }, [router]);
+  }, [search]);
 
-  async function loadData() {
-    setLoading(true);
-    try {
-      const [assetRes, officeRes] = await Promise.all([
-        assetAPI.list({ limit: 100 }).catch(() => null),
-        officeAPI.list({ limit: 100 }).catch(() => null),
-      ]);
-
-      const assetList = assetRes?.data?.assets || assetRes?.data || [];
-      setAssets(assetList);
-
-      const officeList = officeRes?.data?.offices || officeRes?.data || [];
-      setOffices(officeList);
-    } catch (err) {
-      toast.error('Failed to load asset directory');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleOpenModal = (assetToEdit = null) => {
-    if (assetToEdit) {
-      setEditingAsset(assetToEdit);
+  const handleOpenModal = (asset = null) => {
+    if (asset) {
+      setEditingId(asset.id);
       setFormData({
-        serial_number: assetToEdit.serial_number || '',
-        make: assetToEdit.make || '',
-        capacity_kva: assetToEdit.capacity_kva || '100 KVA',
-        dtc_code: assetToEdit.dtc_number || assetToEdit.dtc_code || '',
-        dtc_number: assetToEdit.dtc_number || assetToEdit.dtc_code || '',
-        location_substation: assetToEdit.location_substation || '',
-        condition: assetToEdit.condition || 'good',
-        office_id: assetToEdit.office_id || '',
+        asset_code: asset.asset_code || '',
+        type: asset.type || 'Transformer',
+        make: asset.make || '',
+        serial_number: asset.serial_number || '',
+        capacity: asset.capacity || '63 KVA',
+        dtc_number: asset.dtc_number || '',
+        village_name: asset.village_name || '',
+        location_office_id: asset.location_office_id || '',
+        condition: asset.condition || 'good',
+        status: asset.status || 'in_stock',
+        latitude: asset.latitude || '',
+        longitude: asset.longitude || '',
+        phase: asset.phase || 'THREE',
       });
     } else {
-      setEditingAsset(null);
+      setEditingId(null);
       setFormData({
-        serial_number: '',
+        asset_code: '',
+        type: 'Transformer',
         make: '',
-        capacity_kva: '100 KVA',
-        dtc_code: '',
+        serial_number: '',
+        capacity: '63 KVA',
         dtc_number: '',
-        location_substation: '',
+        village_name: '',
+        location_office_id: '',
         condition: 'good',
-        office_id: '',
+        status: 'in_stock',
+        latitude: '',
+        longitude: '',
+        phase: 'THREE',
       });
     }
-    setModalOpen(true);
+    setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.serial_number || !formData.make) {
-      toast.error('Please fill in Serial Number and Make');
-      return;
-    }
-
-    setSaving(true);
+  const handleSave = async () => {
     try {
-      const payload = {
-        ...formData,
-        dtc_number: formData.dtc_code || formData.dtc_number,
-        dtc_code: formData.dtc_code || formData.dtc_number,
-      };
-      if (editingAsset) {
-        await assetAPI.update(editingAsset.id, payload);
-        toast.success('Asset details updated successfully');
+      if (editingId) {
+        await assetAPI.update(editingId, formData);
+        toast.success('Asset updated successfully');
       } else {
-        await assetAPI.create(payload);
-        toast.success('New transformer asset registered');
+        await assetAPI.create(formData);
+        toast.success('Asset created successfully');
       }
-      setModalOpen(false);
+      setIsModalOpen(false);
       loadData();
     } catch (err) {
-      toast.error(err?.message || 'Failed to save asset');
-    } finally {
-      setSaving(false);
+      toast.error(err.message || 'Failed to save asset');
     }
   };
 
-  // ─── Excel Bulk Upload ──────────────────────────
-  const handleDownloadTemplate = () => {
-    const templateData = [
-      {
-        Serial_Number: 'TR-2026-9901',
-        Make: 'Crompton Greaves',
-        Capacity_KVA: '100 KVA',
-        DTC_Code: 'DTC-33401',
-        Location_Substation: 'Shewade S/stn',
-        Condition: 'good',
-      },
-      {
-        Serial_Number: 'TR-2026-9902',
-        Make: 'Kirloskar Electric',
-        Capacity_KVA: '63 KVA',
-        DTC_Code: 'DTC-33402',
-        Location_Substation: 'Nardana S/stn',
-        Condition: 'faulty',
-      },
-    ];
-
-    const ws = XLSX.utils.json_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Assets');
-    XLSX.writeFile(wb, 'mseb_asset_bulk_template.xlsx');
-    toast.success('Downloaded Asset Bulk Upload Template');
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setImporting(true);
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-
-        if (!json || json.length === 0) {
-          toast.error('No data found in uploaded Excel file');
-          setImporting(false);
-          return;
-        }
-
-        const formattedAssets = json.map((row) => ({
-          serial_number: String(row.Serial_Number || row.serial_number || ''),
-          make: row.Make || row.make || '',
-          capacity_kva: row.Capacity_KVA || row.capacity_kva || '100 KVA',
-          dtc_code: row.DTC_Code || row.dtc_code || '',
-          location_substation: row.Location_Substation || row.location_substation || '',
-          condition: (row.Condition || row.condition || 'good').toLowerCase(),
-        }));
-
-        toast.loading(`Importing ${formattedAssets.length} transformer assets...`, { id: 'bulk-asset-import-toast' });
-        const res = await assetAPI.bulkImport(formattedAssets);
-
-        if (res && res.data) {
-          toast.success(`Successfully imported ${res.data.imported_count || formattedAssets.length} assets!`, { id: 'bulk-asset-import-toast' });
-        }
-        setBulkModalOpen(false);
-        loadData();
-      } catch (err) {
-        toast.error(err?.message || 'Failed to process Excel file', { id: 'bulk-asset-import-toast' });
-      } finally {
-        setImporting(false);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  const filteredAssets = assets.filter((a) => {
-    const q = search.toLowerCase();
-    const sn = (a.serial_number || '').toLowerCase();
-    const make = (a.make || '').toLowerCase();
-    const dtc = (a.dtc_number || a.dtc_code || '').toLowerCase();
-    const sub = (a.location_substation || '').toLowerCase();
-    return sn.includes(q) || make.includes(q) || dtc.includes(q) || sub.includes(q);
-  });
-
-  const officeOptions = offices.map((o) => ({
-    value: o.id,
-    label: o.name,
-    subtext: `${o.type} • ${o.division || ''}`,
-  }));
-
-  const getConditionBadgeStyle = (cond) => {
-    switch (cond) {
-      case 'good':
-        return { bg: 'rgba(16, 185, 129, 0.15)', color: '#059669', border: '1px solid #a7f3d0', label: 'Good' };
-      case 'faulty':
-        return { bg: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', border: '1px solid #fca5a5', label: 'Faulty' };
-      case 'repaired':
-        return { bg: 'rgba(79, 70, 229, 0.15)', color: '#4f46e5', border: '1px solid #c7d2fe', label: 'Repaired' };
-      default:
-        return { bg: 'rgba(107, 114, 128, 0.15)', color: '#4b5563', border: '1px solid #e5e7eb', label: cond };
-    }
-  };
+  const columns = [
+    {
+      header: 'Asset / DTC Code',
+      accessor: 'asset_code',
+      render: (row) => (
+        <div>
+          <div style={{ fontWeight: 600, color: 'var(--primary-800)' }}>
+            {row.dtc_number ? `DTC-${row.dtc_number}` : row.asset_code}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--gray-500)' }}>
+            S/N: {row.serial_number || '—'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Capacity & Phase',
+      render: (row) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>{row.capacity || '—'}</div>
+          <span style={{
+            fontSize: '11px',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            backgroundColor: row.phase === 'SINGLE' ? '#e0f2fe' : '#fef3c7',
+            color: row.phase === 'SINGLE' ? '#0369a1' : '#b45309',
+            fontWeight: 700
+          }}>
+            {row.phase || 'THREE'} Phase
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: 'Make & Condition',
+      render: (row) => (
+        <div>
+          <div>{row.make || '—'}</div>
+          <span style={{ fontSize: '11px', color: 'var(--gray-500)', textTransform: 'capitalize' }}>
+            {row.condition} • {row.status}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: 'Location / Coordinates',
+      render: (row) => (
+        <div style={{ fontSize: '13px' }}>
+          <div>{row.village_name || row.location_office?.name || '—'}</div>
+          {row.latitude && row.longitude && (
+            <div style={{ fontSize: '11px', color: 'var(--gray-500)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <MapPin size={11} /> {Number(row.latitude).toFixed(4)}, {Number(row.longitude).toFixed(4)}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Actions',
+      render: (row) => (
+        <Button size="sm" variant="ghost" icon={Edit2} onClick={() => handleOpenModal(row)}>
+          Edit
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <PageWrapper
-      title="Asset & Transformer Management"
-      subtitle="Master Directory of all MSEDCL distribution transformers, DTC codes, capacities, and health conditions."
-      actions={
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <Button variant="outline" icon={Upload} onClick={() => setBulkModalOpen(true)}>
-            Bulk Excel Import
-          </Button>
-          <Button variant="primary" icon={Plus} onClick={() => handleOpenModal(null)}>
-            + Register New Asset
-          </Button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--gray-900)' }}>Transformers & Assets</h1>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-500)', marginTop: '4px' }}>
+            Master inventory of DTC transformers, capacities, phases, and GPS coordinates.
+          </p>
         </div>
-      }
-    >
-      <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <SearchInput
-          placeholder="Search assets by Serial No, Make, DTC Code, or Substation..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onClear={() => setSearch('')}
-          count={filteredAssets.length}
-          countLabel="assets"
-          maxWidth="500px"
-        />
+        <Button variant="accent" icon={Plus} onClick={() => handleOpenModal()}>
+          Add Asset
+        </Button>
       </div>
 
-      <Card header={`Registered Transformer Assets (${filteredAssets.length})`}>
-        {loading ? (
-          <Loader text="Loading asset directory..." />
-        ) : filteredAssets.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--gray-500)' }}>
-            No assets found matching filter.
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--gray-200)', textAlign: 'left' }}>
-                  <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--gray-700)' }}>Serial Number</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--gray-700)' }}>Make</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--gray-700)' }}>Capacity (KVA)</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--gray-700)' }}>DTC Code</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--gray-700)' }}>Substation / Location</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--gray-700)' }}>Condition</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--gray-700)', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAssets.map((a) => {
-                  const badge = getConditionBadgeStyle(a.condition);
-                  return (
-                    <tr key={a.id} style={{ borderBottom: '1px solid var(--gray-200)' }}>
-                      <td style={{ padding: '12px', fontWeight: 700, color: 'var(--primary-700)' }}>
-                        {a.serial_number}
-                      </td>
-                      <td style={{ padding: '12px', fontWeight: 600, color: 'var(--gray-900)' }}>
-                        {a.make}
-                      </td>
-                      <td style={{ padding: '12px', color: 'var(--gray-700)' }}>
-                        {a.capacity_kva || '100 KVA'}
-                      </td>
-                      <td style={{ padding: '12px', color: 'var(--gray-700)', fontWeight: 600 }}>
-                        {a.dtc_number || a.dtc_code || '—'}
-                      </td>
-                      <td style={{ padding: '12px', color: 'var(--gray-700)' }}>
-                        {a.location_substation || 'Sub Division Store'}
-                      </td>
-                      <td style={{ padding: '12px' }}>
-                        <span
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: 'var(--radius-sm, 4px)',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            backgroundColor: badge.bg,
-                            color: badge.color,
-                            border: badge.border,
-                          }}
-                        >
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <Button size="sm" variant="outline" icon={Edit3} onClick={() => handleOpenModal(a)}>
-                          Edit
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <Card>
+        <div style={{ marginBottom: '1rem', maxWidth: '320px' }}>
+          <Input
+            placeholder="Search DTC, serial number, make..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Table columns={columns} data={assets} isLoading={isLoading} emptyMessage="No assets found." />
       </Card>
 
-      {/* Add / Edit Asset Modal */}
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editingAsset ? `Edit Transformer Asset: ${editingAsset.serial_number}` : 'Register New Transformer Asset'}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingId ? 'Edit Transformer' : 'New Transformer'}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="accent" onClick={handleSave}>
+              Save Asset
+            </Button>
+          </div>
+        }
       >
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <Input
-              label="Transformer Serial Number"
-              required
-              placeholder="e.g. TR-2026-9901"
+              label="DTC Number"
+              placeholder="e.g. 55421"
+              value={formData.dtc_number}
+              onChange={(e) => setFormData(p => ({ ...p, dtc_number: e.target.value }))}
+            />
+            <Input
+              label="Serial Number"
+              placeholder="e.g. TR-2024-991"
               value={formData.serial_number}
-              onChange={(e) => setFormData((p) => ({ ...p, serial_number: e.target.value }))}
+              onChange={(e) => setFormData(p => ({ ...p, serial_number: e.target.value }))}
             />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <Select
+              label="Capacity"
+              value={formData.capacity}
+              onChange={(e) => setFormData(p => ({ ...p, capacity: e.target.value }))}
+              options={TRANSFORMER_CAPACITY.map(c => ({ value: c, label: c }))}
+            />
+
+            <div>
+              <label style={{ display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-700)', marginBottom: '0.375rem' }}>
+                Phase Type
+              </label>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                  <input
+                    type="radio"
+                    name="phase"
+                    value="THREE"
+                    checked={formData.phase === 'THREE'}
+                    onChange={() => setFormData(p => ({ ...p, phase: 'THREE' }))}
+                  />
+                  <span>Three Phase</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                  <input
+                    type="radio"
+                    name="phase"
+                    value="SINGLE"
+                    checked={formData.phase === 'SINGLE'}
+                    onChange={() => setFormData(p => ({ ...p, phase: 'SINGLE' }))}
+                  />
+                  <span>Single Phase</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <Input
-              label="Make (निर्माता कंपनी)"
-              required
-              placeholder="e.g. Crompton Greaves"
+              label="Make / Manufacturer"
+              placeholder="e.g. Crompton / Kirloskar"
               value={formData.make}
-              onChange={(e) => setFormData((p) => ({ ...p, make: e.target.value }))}
+              onChange={(e) => setFormData(p => ({ ...p, make: e.target.value }))}
             />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--gray-700)', marginBottom: 4, display: 'block' }}>
-                Capacity (क्षमता)
-              </label>
-              <select
-                value={formData.capacity_kva}
-                onChange={(e) => setFormData((p) => ({ ...p, capacity_kva: e.target.value }))}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-300)', fontSize: '13px' }}
-              >
-                {CAPACITY_OPTIONS.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
             <Input
-              label="DTC Code (DTC कोड)"
-              placeholder="e.g. DTC-33401"
-              value={formData.dtc_code}
-              onChange={(e) => setFormData((p) => ({ ...p, dtc_code: e.target.value }))}
+              label="Village / DTC Location"
+              placeholder="e.g. Vikharan"
+              value={formData.village_name}
+              onChange={(e) => setFormData(p => ({ ...p, village_name: e.target.value }))}
             />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <Input
-              label="Location / Substation"
-              placeholder="e.g. Shewade S/stn"
-              value={formData.location_substation}
-              onChange={(e) => setFormData((p) => ({ ...p, location_substation: e.target.value }))}
-            />
-            <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--gray-700)', marginBottom: 4, display: 'block' }}>
-                Health Condition (स्थिती)
-              </label>
-              <select
-                value={formData.condition}
-                onChange={(e) => setFormData((p) => ({ ...p, condition: e.target.value }))}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-300)', fontSize: '13px' }}
-              >
-                {CONDITION_OPTIONS.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <SearchableSelect
-            label="Assigned Office / Division Store"
-            value={formData.office_id}
-            onChange={(val) => setFormData((p) => ({ ...p, office_id: val }))}
-            options={officeOptions}
+            label="Location Office"
             placeholder="Select office..."
-            allowCustom={false}
+            value={formData.location_office_id}
+            onChange={(val) => setFormData(p => ({ ...p, location_office_id: val }))}
+            options={offices.map(o => ({ value: o.id, label: `${o.name} (${o.type})` }))}
           />
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '1rem' }}>
-            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" loading={saving}>
-              {editingAsset ? 'Save Asset Details' : 'Register Asset'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Bulk Asset Excel Upload Modal */}
-      <Modal
-        isOpen={bulkModalOpen}
-        onClose={() => setBulkModalOpen(false)}
-        title="Excel Bulk Import Transformer Assets"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)' }}>
-            Upload an Excel (.xlsx / .csv) file containing transformer asset records to populate or update your asset directory.
-          </p>
-
-          <div style={{ padding: '1rem', border: '1px dashed var(--primary-300)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--primary-50)' }}>
-            <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--primary-900)', marginBottom: '4px' }}>
-              📥 Download Sample Asset Excel Template
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--primary-700)', marginBottom: '12px' }}>
-              Includes required columns: Serial_Number, Make, Capacity_KVA, DTC_Code, Location_Substation, Condition.
-            </div>
-            <Button size="sm" variant="outline" icon={Download} onClick={handleDownloadTemplate}>
-              Download Excel Template
-            </Button>
-          </div>
-
-          <div>
-            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--gray-800)', display: 'block', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-              📁 Select Excel File to Upload:
-            </label>
-            <input
-              type="file"
-              accept=".xlsx, .xls, .csv"
-              onChange={handleFileUpload}
-              disabled={importing}
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid var(--gray-300)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '13px',
-              }}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <Input
+              label="Latitude (GPS)"
+              placeholder="e.g. 21.341234"
+              value={formData.latitude}
+              onChange={(e) => setFormData(p => ({ ...p, latitude: e.target.value }))}
             />
-          </div>
-
-          {importing && <Loader text="Processing Excel records & registering assets..." />}
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '1rem' }}>
-            <Button type="button" variant="outline" onClick={() => setBulkModalOpen(false)}>
-              Close
-            </Button>
+            <Input
+              label="Longitude (GPS)"
+              placeholder="e.g. 74.891234"
+              value={formData.longitude}
+              onChange={(e) => setFormData(p => ({ ...p, longitude: e.target.value }))}
+            />
           </div>
         </div>
       </Modal>
-    </PageWrapper>
+    </div>
   );
 }

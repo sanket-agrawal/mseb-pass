@@ -1,262 +1,260 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import PageWrapper from '@/components/layout/PageWrapper';
 import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import SearchInput from '@/components/ui/SearchInput';
 import Modal from '@/components/ui/Modal';
-import { getAuthUser, canManageContractors } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
-import { contractorAPI } from '@/lib/api';
-import { Plus, Phone, Edit } from 'lucide-react';
+import SearchableSelect from '@/components/ui/SearchableSelect';
+import { contractorAPI, officeAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { Plus, Edit2, Truck, Building, Phone, MapPin, Hash } from 'lucide-react';
 
 export default function ContractorsPage() {
-  const router = useRouter();
   const [contractors, setContractors] = useState([]);
+  const [offices, setOffices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [selectedContractor, setSelectedContractor] = useState(null);
-
-  useEffect(() => {
-    const authUser = getAuthUser();
-    if (authUser && !canManageContractors(authUser)) {
-      toast.error('Access restricted to Super Admin role');
-      router.push('/dashboard');
-      return;
-    }
-    fetchContractors();
-  }, [router]);
-
-  const fetchContractors = async () => {
-    setLoading(true);
-    try {
-      const res = await contractorAPI.list();
-      const dbList = res?.data?.contractors || res?.data;
-      if (Array.isArray(dbList)) {
-        setContractors(dbList);
-      }
-    } catch (err) {
-      console.log('Contractor DB load info:', err?.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const [formData, setFormData] = useState({
     name: '',
+    vendor_code: '',
     contact_person: '',
     mobile: '',
     address: '',
-    class_category: 'Class A Contractor',
+    office_id: '',
+    mseb_vendor_id: '',
+    mseb_loe: '',
   });
 
-  const handleOpenAdd = () => {
-    setSelectedContractor(null);
-    setFormData({
-      name: '',
-      contact_person: '',
-      mobile: '',
-      address: '',
-      class_category: 'Class A Contractor',
-    });
-    setModalOpen(true);
-  };
-
-  const handleOpenEdit = (contractor) => {
-    setSelectedContractor(contractor);
-    setFormData({
-      name: contractor.name || '',
-      contact_person: contractor.contact_person || '',
-      mobile: contractor.mobile || '',
-      address: contractor.address || '',
-      class_category: contractor.class_category || 'Class A Contractor',
-    });
-    setModalOpen(true);
-  };
-
-  const handleSaveContractor = async (e) => {
-    e.preventDefault();
-    if (!formData.name) {
-      toast.error('Contractor company name is required');
-      return;
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [contRes, offRes] = await Promise.all([
+        contractorAPI.list(search),
+        officeAPI.list()
+      ]);
+      setContractors(contRes.data || contRes.contractors || []);
+      setOffices(offRes.data || offRes.offices || []);
+    } catch (err) {
+      toast.error('Failed to load contractors');
+    } finally {
+      setIsLoading(false);
     }
-    if (formData.mobile && !/^\d{10}$/.test(formData.mobile.trim())) {
-      toast.error('Mobile number must be exactly 10 digits');
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [search]);
+
+  const handleOpenModal = (contractor = null) => {
+    if (contractor) {
+      setEditingId(contractor.id);
+      setFormData({
+        name: contractor.contractor_firm || contractor.first_name || '',
+        vendor_code: contractor.vendor_code || '',
+        contact_person: contractor.first_name || '',
+        mobile: contractor.mobile || '',
+        address: contractor.contractor_address || '',
+        office_id: contractor.office_id || '',
+        mseb_vendor_id: contractor.mseb_vendor_id || '',
+        mseb_loe: contractor.mseb_loe || '',
+      });
+    } else {
+      setEditingId(null);
+      setFormData({
+        name: '',
+        vendor_code: '',
+        contact_person: '',
+        mobile: '',
+        address: '',
+        office_id: '',
+        mseb_vendor_id: '',
+        mseb_loe: '',
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Contractor firm name is required');
       return;
     }
 
     try {
-      if (selectedContractor && selectedContractor.id && !selectedContractor.id.startsWith('cnt_')) {
-        await contractorAPI.update(selectedContractor.id, formData);
-      } else if (!selectedContractor) {
+      if (editingId) {
+        await contractorAPI.update(editingId, formData);
+        toast.success('Contractor updated successfully');
+      } else {
         await contractorAPI.create(formData);
+        toast.success('Contractor created successfully');
       }
+      setIsModalOpen(false);
+      loadData();
     } catch (err) {
-      console.log('Contractor API save info:', err?.message);
+      toast.error(err.message || 'Failed to save contractor');
     }
-
-    if (selectedContractor) {
-      setContractors(prev =>
-        prev.map(c => (c.id === selectedContractor.id ? { ...c, ...formData } : c))
-      );
-      toast.success('Contractor updated successfully');
-    } else {
-      const newContractor = {
-        id: `cnt_${Date.now()}`,
-        ...formData,
-        total_passes: 0,
-        rating: '5.0 ★',
-        is_active: true,
-      };
-      setContractors(prev => [newContractor, ...prev]);
-      toast.success('New contractor registered successfully');
-    }
-    setModalOpen(false);
-    fetchContractors();
   };
 
   const columns = [
     {
-      header: 'Contractor Company Name',
-      accessorKey: 'name',
-      cell: (row) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>
-            {row.name}
-          </span>
-          <span style={{ fontSize: '11px', color: '#64748b' }}>
-            {row.address || 'MSEDCL Registered Partner'}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: 'Contact Official',
-      accessorKey: 'contact_person',
-      cell: (row) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontWeight: 600, color: '#334155' }}>
-            {row.contact_person || 'Representative'}
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#64748b', fontSize: '11px' }}>
-            <Phone style={{ width: 12, height: 12 }} />
-            <span>{row.mobile}</span>
+      header: 'Firm Name / Vendor',
+      accessor: 'contractor_firm',
+      render: (row) => (
+        <div>
+          <div style={{ fontWeight: 600, color: 'var(--gray-900)' }}>
+            {row.contractor_firm || row.first_name}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--gray-500)' }}>
+            Code: {row.vendor_code || 'N/A'}
           </div>
         </div>
       ),
     },
     {
-      header: 'Gate Passes Issued',
-      accessorKey: 'total_passes',
-      cell: (row) => (
-        <span style={{ fontWeight: 700, color: '#059669', fontSize: '13px' }}>
-          {row.total_passes} passes
+      header: 'MSEB Vendor ID',
+      accessor: 'mseb_vendor_id',
+      render: (row) => (
+        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--primary-700)' }}>
+          {row.mseb_vendor_id || '—'}
         </span>
       ),
     },
     {
+      header: 'MSEB LOE',
+      accessor: 'mseb_loe',
+      render: (row) => row.mseb_loe || '—',
+    },
+    {
+      header: 'Mapped Office',
+      accessor: 'office',
+      render: (row) => (
+        <span style={{ fontSize: '13px', color: 'var(--gray-700)' }}>
+          {row.office?.name ? `${row.office.name} (${row.office.type})` : '—'}
+        </span>
+      ),
+    },
+    {
+      header: 'Contact & Mobile',
+      accessor: 'mobile',
+      render: (row) => (
+        <div style={{ fontSize: '13px' }}>
+          <div>{row.mobile || '—'}</div>
+          {row.contractor_address && (
+            <div style={{ fontSize: '11px', color: 'var(--gray-500)' }}>{row.contractor_address}</div>
+          )}
+        </div>
+      ),
+    },
+    {
       header: 'Actions',
-      accessorKey: 'actions',
-      align: 'right',
-      cell: (row) => (
-        <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(row)}>
-          <Edit style={{ width: 15, height: 15 }} /> Edit
+      render: (row) => (
+        <Button size="sm" variant="ghost" icon={Edit2} onClick={() => handleOpenModal(row)}>
+          Edit
         </Button>
       ),
     },
   ];
 
-  const filteredContractors = contractors.filter((c) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    const name = (c.name || '').toLowerCase();
-    const contact = (c.contact_person || '').toLowerCase();
-    const mobile = (c.mobile || '').toLowerCase();
-    return name.includes(q) || contact.includes(q) || mobile.includes(q);
-  });
-
   return (
-    <PageWrapper
-      title="Contractor Directory & Performance"
-      subtitle="Authorized transport contractors and electrical repair vendors for MSEDCL Gate Passes."
-      actions={
-        <Button variant="accent" icon={Plus} onClick={handleOpenAdd}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--gray-900)' }}>Contractors</h1>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-500)', marginTop: '4px' }}>
+            Manage authorized contractors, vendor codes, and office mappings.
+          </p>
+        </div>
+        <Button variant="accent" icon={Plus} onClick={() => handleOpenModal()}>
           Add Contractor
         </Button>
-      }
-    >
-      <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <SearchInput
-          placeholder="Search contractors by Name, Contact Person, or Mobile..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onClear={() => setSearch('')}
-          count={filteredContractors.length}
-          countLabel="contractors"
-          maxWidth="480px"
-        />
       </div>
 
       <Card>
-        <Table
-          columns={columns}
-          data={filteredContractors}
-          loading={loading}
-          emptyMessage="No Contractors Found"
-          emptyDescription="No contractors found matching your search query."
-        />
+        <div style={{ marginBottom: '1rem', maxWidth: '320px' }}>
+          <Input
+            placeholder="Search contractor or vendor code..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Table columns={columns} data={contractors} isLoading={isLoading} emptyMessage="No contractors found." />
       </Card>
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-        title={selectedContractor ? 'Edit Contractor Details' : 'Register New Contractor'}
-      >
-        <form onSubmit={handleSaveContractor} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Input
-            label="Contractor Company Name"
-            placeholder="e.g. M/S Standard Electrotech Service"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          />
-
-          <Input
-            label="Contact Person Name"
-            placeholder="e.g. Rupesh Contractor"
-            value={formData.contact_person}
-            onChange={(e) => setFormData(prev => ({ ...prev, contact_person: e.target.value }))}
-          />
-
-          <Input
-            label="Contact Mobile Phone"
-            placeholder="e.g. 9876543212"
-            value={formData.mobile}
-            onChange={(e) => setFormData(prev => ({ ...prev, mobile: e.target.value }))}
-          />
-
-          <Input
-            label="Business Address / Area"
-            placeholder="e.g. Dondaicha MIDC, Dist. Dhule"
-            value={formData.address}
-            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-          />
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: '0.5rem' }}>
-            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
+        onClose={() => setIsModalOpen(false)}
+        title={editingId ? 'Edit Contractor' : 'New Contractor'}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="accent">
+            <Button variant="accent" onClick={handleSave}>
               Save Contractor
             </Button>
           </div>
-        </form>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Input
+            label="Contractor Firm Name"
+            required
+            placeholder="e.g. Rupesh Transport & Electricals"
+            value={formData.name}
+            onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <Input
+              label="MSEB Vendor ID"
+              placeholder="e.g. VEN-2026-001"
+              value={formData.mseb_vendor_id}
+              onChange={(e) => setFormData(p => ({ ...p, mseb_vendor_id: e.target.value }))}
+            />
+            <Input
+              label="MSEB LOE No."
+              placeholder="e.g. LOE-5512"
+              value={formData.mseb_loe}
+              onChange={(e) => setFormData(p => ({ ...p, mseb_loe: e.target.value }))}
+            />
+          </div>
+
+          <SearchableSelect
+            label="Mapped Office"
+            placeholder="Select MSEB office..."
+            value={formData.office_id}
+            onChange={(val) => setFormData(p => ({ ...p, office_id: val }))}
+            options={offices.map(o => ({ value: o.id, label: `${o.name} (${o.type})` }))}
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <Input
+              label="Mobile Number"
+              placeholder="10-digit mobile"
+              value={formData.mobile}
+              onChange={(e) => setFormData(p => ({ ...p, mobile: e.target.value }))}
+            />
+            <Input
+              label="Vendor Code (Auto-assigned if blank)"
+              placeholder="e.g. CON-000001"
+              value={formData.vendor_code}
+              onChange={(e) => setFormData(p => ({ ...p, vendor_code: e.target.value }))}
+            />
+          </div>
+
+          <Input
+            label="Address"
+            placeholder="Firm registered address"
+            value={formData.address}
+            onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
+          />
+        </div>
       </Modal>
-    </PageWrapper>
+    </div>
   );
 }
