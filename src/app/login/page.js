@@ -157,7 +157,7 @@ export default function LoginPage() {
             MSEB Digital Gate Pass
           </h1>
           <p style={{ fontSize: 'var(--text-xs)', color: '#475569', margin: 0, fontWeight: 600 }}>
-            महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्या. (MSEDCL)
+            महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्या. (MSEB)
           </p>
         </div>
 

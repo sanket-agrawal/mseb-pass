@@ -189,13 +189,13 @@ export default function GatePassDetailPage({ params }) {
             <Button variant="outline" icon={ArrowLeft}>Back</Button>
           </Link>
 
-          <Button variant="accent" icon={() => <WhatsAppIcon size={18} color="#0f172a" />} onClick={handleQuickWhatsAppDriver}>
+          {/* <Button variant="accent" icon={() => <WhatsAppIcon size={18} color="#0f172a" />} onClick={handleQuickWhatsAppDriver}>
             Send to Driver
-          </Button>
+          </Button> */}
 
-          <Button variant="secondary" icon={Share2} onClick={() => setShareModalOpen(true)}>
+          {/* <Button variant="secondary" icon={Share2} onClick={() => setShareModalOpen(true)}>
             Share
-          </Button>
+          </Button> */}
 
           <Button variant="outline" icon={CheckCircle} onClick={() => setStatusModalOpen(true)}>
             Status
@@ -418,7 +418,7 @@ export default function GatePassDetailPage({ params }) {
                 <div>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>CONTRACTOR / VENDOR (ठेकेदारास)</span>
                   <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--gray-800)' }}>
-                    {pass.contractor_name || pass.contractor?.company_name || pass.contractor?.name || 'MSEDCL Partner'}
+                    {pass.contractor_name || pass.contractor?.company_name || pass.contractor?.name || 'MSEB Partner'}
                   </div>
                 </div>
               </div>

@@ -43,7 +43,7 @@ export default function GatePassTable({ passes = [], onView, onDownload }) {
         return (
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary-700)' }}>
-              {row.id}
+              {row.display_id || row.id}
             </div>
             <span
               style={{
@@ -88,10 +88,10 @@ export default function GatePassTable({ passes = [], onView, onDownload }) {
       accessorKey: 'destination_substation',
       cell: (row) => (
         <div style={{ fontSize: 'var(--text-xs)' }}>
-          <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{row.fromSubstation || 'Dondaicha Depot'}</div>
+          <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{row.from_office?.name || row.fromSubstation || 'Dondaicha Depot'}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--gray-500)' }}>
             <ArrowRight style={{ width: 12, height: 12 }} />
-            <span>{row.destination_substation || row.toSubstation || '-'}</span>
+            <span>{row.destination_substation || row.toSubstation || row.to_office?.name || '-'}</span>
           </div>
         </div>
       )

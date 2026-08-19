@@ -36,7 +36,7 @@ function generateEmailHTML(gatePass, viewUrl, recipientName) {
     <div class="container">
       <div class="header">
         <h1>MSEB Digital Gate Pass</h1>
-        <p>महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEDCL Dondaicha)</p>
+        <p>महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEB Dondaicha)</p>
         <span class="badge">${typeStr}</span>
       </div>
 
@@ -63,7 +63,7 @@ function generateEmailHTML(gatePass, viewUrl, recipientName) {
           </div>
           <div class="field">
             <div class="label">Transformer Capacity & Make</div>
-            <div class="value">${mat.capacity || '100 KVA'} - ${mat.make || 'MSEDCL Unit'} (Sr: ${mat.serial_number || '-'})</div>
+            <div class="value">${mat.capacity || '100 KVA'} - ${mat.make || 'MSEB Unit'} (Sr: ${mat.serial_number || '-'})</div>
           </div>
         </div>
 
@@ -73,7 +73,7 @@ function generateEmailHTML(gatePass, viewUrl, recipientName) {
       </div>
 
       <div class="footer">
-        <p>MSEDCL Sub Division Dondaicha, Dist. Dhule</p>
+        <p>MSEB Sub Division Dondaicha, Dist. Dhule</p>
         <p>Gate Pass Reference: ${gatePass.id}</p>
       </div>
     </div>

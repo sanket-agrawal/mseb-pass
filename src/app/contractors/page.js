@@ -103,8 +103,8 @@ export default function ContractorsPage() {
   const columns = [
     {
       header: 'Firm Name / Vendor',
-      accessor: 'contractor_firm',
-      render: (row) => (
+      accessorKey: 'contractor_firm',
+      cell: (row) => (
         <div>
           <div style={{ fontWeight: 600, color: 'var(--gray-900)' }}>
             {row.contractor_firm || row.first_name}
@@ -117,8 +117,8 @@ export default function ContractorsPage() {
     },
     {
       header: 'MSEB Vendor ID',
-      accessor: 'mseb_vendor_id',
-      render: (row) => (
+      accessorKey: 'mseb_vendor_id',
+      cell: (row) => (
         <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--primary-700)' }}>
           {row.mseb_vendor_id || '—'}
         </span>
@@ -126,13 +126,13 @@ export default function ContractorsPage() {
     },
     {
       header: 'MSEB LOE',
-      accessor: 'mseb_loe',
-      render: (row) => row.mseb_loe || '—',
+      accessorKey: 'mseb_loe',
+      cell: (row) => row.mseb_loe || '—',
     },
     {
       header: 'Mapped Office',
-      accessor: 'office',
-      render: (row) => (
+      accessorKey: 'office',
+      cell: (row) => (
         <span style={{ fontSize: '13px', color: 'var(--gray-700)' }}>
           {row.office?.name ? `${row.office.name} (${row.office.type})` : '—'}
         </span>
@@ -140,8 +140,8 @@ export default function ContractorsPage() {
     },
     {
       header: 'Contact & Mobile',
-      accessor: 'mobile',
-      render: (row) => (
+      accessorKey: 'mobile',
+      cell: (row) => (
         <div style={{ fontSize: '13px' }}>
           <div>{row.mobile || '—'}</div>
           {row.contractor_address && (
@@ -152,7 +152,7 @@ export default function ContractorsPage() {
     },
     {
       header: 'Actions',
-      render: (row) => (
+      cell: (row) => (
         <Button size="sm" variant="ghost" icon={Edit2} onClick={() => handleOpenModal(row)}>
           Edit
         </Button>

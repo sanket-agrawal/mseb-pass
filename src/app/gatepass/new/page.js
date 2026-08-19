@@ -138,6 +138,10 @@ function GatePassNewFormContent() {
     setMounted(true);
   }, []);
 
+  if (loadingLinked) {
+    return <Loader text="Loading linked gate pass..." />;
+  }
+
   return (
     <>
       {isSubmitting && mounted && createPortal(
@@ -193,7 +197,7 @@ function GatePassNewFormContent() {
                 Creating Gate Pass...
               </h3>
               <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
-                Generating digital serial number, saving job records, & syncing with MSEDCL database.
+                Generating digital serial number, saving job records, & syncing with MSEB database.
               </p>
             </div>
           </div>

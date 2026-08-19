@@ -88,7 +88,7 @@ export default function DashboardPage() {
     }
   };
 
-  const officeTitle = user?.office?.name || user?.branch || 'MSEDCL Digital Gate Pass';
+  const officeTitle = user?.office?.name || user?.branch || 'MSEB Digital Gate Pass';
 
   return (
     <PageWrapper

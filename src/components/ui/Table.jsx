@@ -60,16 +60,20 @@ export default function Table({
               onClick={() => onRowClick && onRowClick(row)}
               style={{ cursor: onRowClick ? 'pointer' : 'default' }}
             >
-              {columns.map((col, colIdx) => (
-                <td
-                  key={colIdx}
-                  style={{
-                    textAlign: col.align || 'left'
-                  }}
-                >
-                  {col.cell ? col.cell(row) : row[col.accessorKey]}
-                </td>
-              ))}
+              {columns.map((col, colIdx) => {
+                const cellRenderer = col.cell || col.render;
+                const accessorKey = col.accessorKey || col.accessor;
+                return (
+                  <td
+                    key={colIdx}
+                    style={{
+                      textAlign: col.align || 'left'
+                    }}
+                  >
+                    {cellRenderer ? cellRenderer(row) : (accessorKey ? row[accessorKey] : null)}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

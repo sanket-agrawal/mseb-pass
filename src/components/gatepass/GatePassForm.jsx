@@ -31,53 +31,38 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         recipient_name: linked.sender_name || linked.recipient_name || 'Assistant Engineer',
         recipient_designation: linked.sender_designation || linked.recipient_designation || 'AE',
         destination_section: linked.destination_section || '',
-        destination_substation: linked.destination_substation || linked.from_office?.name || '',
-        destination_division: linked.destination_division || '',
+        destination_substation: linked.from_office?.name || '',
+        destination_division: linked.from_office?.division || linked.destination_division || '',
         vehicle_number: linked.vehicle_number || '',
         driver_name: linked.driver_name || '',
         driver_mobile: linked.driver_mobile || '',
         contractor_id: linked.contractor_id || '',
         contractor_name: linked.contractor_name || linked.contractor?.contractor_firm || linked.contractor?.first_name || '',
-        materials: linked.materials && linked.materials.length > 0 ? linked.materials.map(m => ({
-          sr_no: m.sr_no,
-          item_type: m.item_type || 'Transformer',
-          make: m.make || '',
-          serial_number: m.serial_number || '',
-          job_number: m.job_number || '',
-          capacity: m.capacity || '63 KVA',
-          village_name: m.village_name || '',
-          group_number: m.group_number || '',
-          dtc_number: m.dtc_number || '',
-          condition: 'faulty',
-          job_type: 'failed',
-          failed_job_record: {
-            warranty: 'GP',
-            oil_drain_serial_number: '',
-            recorded_by_cpf: linked.line_staff_cpf || ''
-          },
-          healthy_job_record: {
-            ryb_r_reading: '100',
-            ryb_y_reading: '100',
-            ryb_b_reading: '100',
-            spark_test: 'ok',
-            tested_by_cpf: linked.line_staff_cpf || ''
-          },
-          remarks: m.remarks || ''
-        })) : [
+        materials: [
           {
             sr_no: 1,
             item_type: 'Transformer',
             make: '',
             serial_number: '',
             job_number: '',
-            capacity: '63 KVA',
+            capacity: '',
             village_name: '',
             group_number: '',
             dtc_number: '',
             condition: 'faulty',
             job_type: 'failed',
-            failed_job_record: { warranty: 'GP', oil_drain_serial_number: '', recorded_by_cpf: '' },
-            healthy_job_record: { ryb_r_reading: '100', ryb_y_reading: '100', ryb_b_reading: '100', spark_test: 'ok', tested_by_cpf: '' },
+            failed_job_record: {
+              warranty: 'GP',
+              oil_drain_serial_number: '',
+              recorded_by_cpf: linked.line_staff_cpf || ''
+            },
+            healthy_job_record: {
+              ryb_r_reading: '100',
+              ryb_y_reading: '100',
+              ryb_b_reading: '100',
+              spark_test: 'ok',
+              tested_by_cpf: linked.line_staff_cpf || ''
+            },
             remarks: ''
           }
         ],
@@ -131,7 +116,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
           make: '',
           serial_number: '',
           job_number: '',
-          capacity: '63 KVA',
+          capacity: '',
           village_name: '',
           group_number: '',
           dtc_number: '',
@@ -183,7 +168,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         setDtcOptions(
           assets.map(a => ({
             value: a.dtc_number || a.asset_code,
-            label: `${a.dtc_number ? `DTC-${a.dtc_number}` : a.asset_code} - ${a.capacity || '63 KVA'} (${a.village_name || a.location_substation || ''})`,
+            label: `${a.dtc_number ? `DTC-${a.dtc_number}` : a.asset_code} - ${a.capacity || '—'} (${a.village_name || a.location_substation || ''})`,
             asset: a
           }))
         );
@@ -210,7 +195,8 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         setOfficeOptions(
           offices.map(o => ({
             value: o.id,
-            label: `${o.name} (${o.type})`
+            label: `${o.name} (${o.type})`,
+            office: o
           }))
         );
       } catch (err) {
@@ -244,6 +230,15 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         line_staff_cpf: cpf
       }));
     }
+  };
+
+  const handleDestinationOfficeSelect = (officeId) => {
+    const selected = officeOptions.find(o => o.value === officeId);
+    setFormData(prev => ({
+      ...prev,
+      to_office_id: officeId,
+      destination_substation: selected ? selected.office.name : ''
+    }));
   };
 
   const handleJobRecordCPFSelect = (idx, type, cpf, item) => {
@@ -330,7 +325,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
           make: '',
           serial_number: '',
           job_number: '',
-          capacity: '63 KVA',
+          capacity: '',
           village_name: '',
           group_number: '',
           dtc_number: '',
@@ -358,7 +353,8 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
   const validateForm = () => {
     const errs = {};
     if (!formData.recipient_name?.trim()) errs.recipient_name = 'Recipient name is required';
-    if (!formData.destination_substation?.trim()) errs.destination_substation = 'Destination substation is required';
+    if (!formData.from_office_id) errs.from_office_id = 'Source office is required';
+    if (!formData.to_office_id) errs.to_office_id = 'Destination office is required';
 
     formData.materials.forEach((m, idx) => {
       if (!m.capacity) errs[`capacity_${idx}`] = 'Capacity is required';
@@ -470,13 +466,26 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
             onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
           />
 
-          <Input
-            label="Destination Substation / Sub-Division"
+          <SearchableSelect
+            label="Source Office (कुठून)"
             required
-            placeholder="e.g. 33/11 KV Substation Dondaicha"
-            error={errors.destination_substation}
-            value={formData.destination_substation}
-            onChange={(e) => setFormData(prev => ({ ...prev, destination_substation: e.target.value }))}
+            value={formData.from_office_id}
+            onChange={(val) => setFormData(prev => ({ ...prev, from_office_id: val }))}
+            options={officeOptions}
+            placeholder="Select source office..."
+            error={errors.from_office_id}
+            allowCustom={false}
+          />
+
+          <SearchableSelect
+            label="Destination Office (कुठे)"
+            required
+            value={formData.to_office_id}
+            onChange={(val) => handleDestinationOfficeSelect(val)}
+            options={officeOptions}
+            placeholder="Select destination office..."
+            error={errors.to_office_id}
+            allowCustom={false}
           />
 
           <Input
@@ -586,6 +595,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
                 <Select
                   label="Capacity (क्षमता)"
                   required
+                  placeholder="Select capacity..."
                   error={errors[`capacity_${idx}`]}
                   value={mat.capacity}
                   onChange={(e) => handleMaterialChange(idx, 'capacity', e.target.value)}

@@ -8,7 +8,7 @@ export default function GatePassPreview({ data, className = '' }) {
 
   const isOutward = data.type === 'outward';
   const materials = data.materials || [];
-  const officeName = data.from_office?.name || data.sender_designation || 'MSEDCL Office';
+  const officeName = data.from_office?.name || data.sender_designation || 'MSEB Office';
   const paperBgColor = isOutward ? '#FFF9C4' : '#FCE4EC';
   const paperBorderColor = isOutward ? '#1e293b' : '#be185d';
 
@@ -20,7 +20,7 @@ export default function GatePassPreview({ data, className = '' }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
             <Zap style={{ width: 22, height: 22, color: 'var(--primary-700)', fill: 'currentColor' }} />
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEDCL)
+              महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEB)
             </h2>
           </div>
           <p style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600, margin: 0 }}>
@@ -78,7 +78,7 @@ export default function GatePassPreview({ data, className = '' }) {
           <div className="field-row">
             <span className="field-label">वाहन चालक (Driver):</span>
             <span className="field-value">
-              {data.driver_name || 'TBD'} {data.driver_mobile ? `(Phone: ${data.driver_mobile})` : ''}
+              {data.driver_name || 'TBD'} {data.driver_mobile ? `(Phone: ${data.driver_mobile})` : ''} {data.vehicle_number ? `[Vehicle No: ${data.vehicle_number}]` : ''}
             </span>
           </div>
 
@@ -163,17 +163,47 @@ export default function GatePassPreview({ data, className = '' }) {
 
         {/* Signatures */}
         <div className="preview-signatures">
-          <div className="sig-column">
-            <div className="sig-line">देणाऱ्याची स्वाक्षरी (Sender Signature)</div>
+          <div className="sig-column" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              color: '#15803d', 
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              fontWeight: 700, 
+              fontSize: '0.65rem', 
+              marginBottom: 8
+            }}>
+              <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✔</span> Digitally Signed
+            </div>
+            <div className="sig-line" style={{ width: '100%' }}>देणाऱ्याची स्वाक्षरी (Sender Signature)</div>
             <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: 4 }}>
               {data.sender_name || 'Sender'} ({data.sender_designation || 'Officer'})
             </div>
           </div>
 
-          <div className="sig-column">
-            <div className="sig-line">घेणाऱ्याची स्वाक्षरी (Receiver Signature)</div>
+          <div className="sig-column" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              color: '#15803d', 
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              fontWeight: 700, 
+              fontSize: '0.65rem', 
+              marginBottom: 8
+            }}>
+              <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✔</span> Digitally Signed
+            </div>
+            <div className="sig-line" style={{ width: '100%' }}>घेणाऱ्याची स्वाक्षरी (Receiver Signature)</div>
             <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: 4 }}>
-              {data.receiver_name || data.line_staff_name || 'Receiver Signature'}
+              {data.receiver_name || (isOutward ? data.contractor_name : data.line_staff_name) || 'Receiver Signature'}
             </div>
           </div>
         </div>

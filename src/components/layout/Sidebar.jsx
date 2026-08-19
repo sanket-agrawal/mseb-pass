@@ -46,9 +46,7 @@ export default function Sidebar() {
     router.replace('/login');
   };
 
-  const officeName = user?.office?.name || user?.branch || 'Sub Division Dondaicha';
-  const mandalName = user?.mandal || user?.circle || user?.office?.mandal || user?.office?.circle || 'Dhule Circle (धुळे मंडळ)';
-  const divisionName = user?.division || user?.office?.division || 'Dhule Division (धुळे विभाग)';
+
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, show: true },
@@ -74,10 +72,7 @@ export default function Sidebar() {
             MSEB Gate Pass
           </span>
           <span style={{ fontSize: '11px', color: 'var(--accent-400)', fontWeight: 700 }}>
-            {mandalName}
-          </span>
-          <span style={{ fontSize: '10px', color: 'var(--gray-300)', fontWeight: 600 }}>
-            {divisionName} • {officeName}
+            Dondaicha Division
           </span>
         </div>
       </div>
@@ -129,8 +124,7 @@ export default function Sidebar() {
 
         <div style={{ fontSize: '10px', color: 'var(--gray-400)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <div>MSEB Digital Initiative</div>
-          <div style={{ color: 'var(--accent-400)', fontWeight: 700 }}>{mandalName}</div>
-          <div style={{ color: '#cbd5e1', fontWeight: 600 }}>{divisionName}</div>
+          <div style={{ color: 'var(--accent-400)', fontWeight: 700 }}>Dondaicha Division</div>
         </div>
       </div>
 

@@ -61,7 +61,7 @@ export default function GatePassCard({ pass, onView, onDownload }) {
             {isOutward ? 'OUTWARD जावक' : 'INWARD आवक'}
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--gray-900)' }}>
-            {pass.id}
+            {pass.display_id || pass.id}
           </span>
         </div>
 
@@ -81,9 +81,9 @@ export default function GatePassCard({ pass, onView, onDownload }) {
         }}
       >
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>TRANSFORMER</div>
-        <div style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--gray-900)' }}>
-          {pass.materials?.[0]?.capacity || pass.transformerCapacity || 'Transformer'} - {pass.materials?.[0]?.make || pass.transformerMake || 'MSEDCL Unit'}
-        </div>
+          <span style={{ fontWeight: 600, color: 'var(--gray-900)', fontSize: 'var(--text-sm)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {pass.materials?.[0]?.capacity || pass.transformerCapacity || 'Transformer'} - {pass.materials?.[0]?.make || pass.transformerMake || 'MSEB Unit'}
+          </span>
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)', fontFamily: 'var(--font-mono)' }}>
           Sr. No: {pass.materials?.[0]?.serial_number || pass.transformerSrNo || '-'}
         </div>
@@ -94,7 +94,7 @@ export default function GatePassCard({ pass, onView, onDownload }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ color: 'var(--gray-400)', display: 'block' }}>FROM</span>
           <span style={{ fontWeight: 600, color: 'var(--gray-800)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-            {pass.fromSubstation || 'Dondaicha Depot'}
+            {pass.from_office?.name || pass.fromSubstation || 'Dondaicha Depot'}
           </span>
         </div>
 
@@ -103,7 +103,7 @@ export default function GatePassCard({ pass, onView, onDownload }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ color: 'var(--gray-400)', display: 'block' }}>TO</span>
           <span style={{ fontWeight: 600, color: 'var(--gray-800)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-            {pass.destination_substation || pass.toSubstation || 'Destination'}
+            {pass.destination_substation || pass.toSubstation || pass.to_office?.name || 'Destination'}
           </span>
         </div>
       </div>

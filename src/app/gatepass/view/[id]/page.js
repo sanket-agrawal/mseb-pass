@@ -70,7 +70,7 @@ export default function PublicGatePassViewPage({ params }) {
             MSEB Digital Gate Pass
           </h1>
           <p style={{ fontSize: '11px', color: 'var(--gray-300)', margin: 0 }}>
-            MSEDCL Sub Division Dondaicha (गाळण शाखा-दोंडाईचा)
+            MSEB Sub Division Dondaicha (गाळण शाखा-दोंडाईचा)
           </p>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function PublicGatePassViewPage({ params }) {
 
       {/* Public Footer */}
       <footer style={{ textAlign: 'center', padding: '1rem 0', fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-        <p style={{ margin: 0 }}>This digital gate pass was issued by MSEDCL Sub Division Dondaicha.</p>
+        <p style={{ margin: 0 }}>This digital gate pass was issued by MSEB Sub Division Dondaicha.</p>
         <p style={{ margin: '4px 0 0 0', fontFamily: 'var(--font-mono)' }}>Reference ID: {pass.id}</p>
       </footer>
     </div>

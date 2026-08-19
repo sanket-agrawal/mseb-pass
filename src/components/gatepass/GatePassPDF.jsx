@@ -181,7 +181,7 @@ export function GatePassPDF({ data }) {
   const borderColor = isOutward ? '#1e293b' : '#be185d';
 
   const recipientStr = sanitizeText(`${data.recipient_name || ''} ${data.recipient_designation ? `(${data.recipient_designation})` : ''} - ${data.destination_substation || ''}${data.destination_section ? `, ${data.destination_section}` : ''}`) || `${data.recipient_name || 'AE'} - ${data.destination_substation || 'Substation'}`;
-  const driverStr = sanitizeText(`${data.driver_name || ''} (Mob: ${data.driver_mobile || ''})`) || `${data.driver_name || ''}`;
+  const driverStr = sanitizeText(`${data.driver_name || ''} ${data.driver_mobile ? `(Mob: ${data.driver_mobile})` : ''} ${data.vehicle_number ? `[Vehicle No: ${data.vehicle_number}]` : ''}`) || `${data.driver_name || ''}`;
   const contractorStr = sanitizeText(data.contractor_name) || '-';
   const remarksStr = sanitizeText(data.remarks) || 'Inspected all transformer units. LT and HT Rods in good condition. No oil leakage.';
 
@@ -195,7 +195,7 @@ export function GatePassPDF({ data }) {
               MAHARASHTRA STATE ELECTRICITY DISTRIBUTION CO. LTD.
             </Text>
             <Text style={styles.subTitle}>
-              Sub Division Dondaicha, Dist. Dhule (MSEDCL Dondaicha)
+              Sub Division Dondaicha, Dist. Dhule (MSEB Dondaicha)
             </Text>
             <Text style={isOutward ? styles.passBadgeOutward : styles.passBadgeInward}>
               {isOutward ? 'GATE PASS (OUTWARD / JAVAK)' : 'GATE PASS (INWARD / AAVAK)'}
@@ -297,16 +297,46 @@ export function GatePassPDF({ data }) {
           {/* Signatures */}
           <View style={styles.signatures}>
             <View style={styles.sigBlock}>
-              <Text style={styles.sigLine}>Denaryachi Sahi (Sender Signature)</Text>
+              <View style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                backgroundColor: '#f0fdf4',
+                borderColor: '#bbf7d0',
+                borderWidth: 1,
+                borderRadius: 3,
+                paddingHorizontal: 4,
+                paddingVertical: 1.5,
+                marginBottom: 6
+              }}>
+                <Text style={{ fontSize: 7, color: '#15803d', fontWeight: 'bold' }}>Digitally Signed</Text>
+              </View>
+              <View style={{ borderTopWidth: 1, borderTopColor: '#334155', width: '100%', paddingTop: 4, alignItems: 'center' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 9 }}>Denaryachi Sahi (Sender Signature)</Text>
+              </View>
               <Text style={{ fontSize: 8.5, color: '#475569', marginTop: 2 }}>
                 {sanitizeText(data.sender_name)} ({sanitizeText(data.sender_designation)})
               </Text>
             </View>
 
             <View style={styles.sigBlock}>
-              <Text style={styles.sigLine}>Ghenaryachi Sahi (Receiver Signature)</Text>
+              <View style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                backgroundColor: '#f0fdf4',
+                borderColor: '#bbf7d0',
+                borderWidth: 1,
+                borderRadius: 3,
+                paddingHorizontal: 4,
+                paddingVertical: 1.5,
+                marginBottom: 6
+              }}>
+                <Text style={{ fontSize: 7, color: '#15803d', fontWeight: 'bold' }}>Digitally Signed</Text>
+              </View>
+              <View style={{ borderTopWidth: 1, borderTopColor: '#334155', width: '100%', paddingTop: 4, alignItems: 'center' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 9 }}>Ghenaryachi Sahi (Receiver Signature)</Text>
+              </View>
               <Text style={{ fontSize: 8.5, color: '#475569', marginTop: 2 }}>
-                {sanitizeText(data.receiver_name || data.line_staff_name) || 'Receiver Signature'}
+                {sanitizeText(data.receiver_name || (data.type === 'outward' ? data.contractor_name : data.line_staff_name)) || 'Receiver Signature'}
               </Text>
             </View>
           </View>

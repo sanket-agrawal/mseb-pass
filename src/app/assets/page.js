@@ -115,8 +115,8 @@ export default function AssetsPage() {
   const columns = [
     {
       header: 'Asset / DTC Code',
-      accessor: 'asset_code',
-      render: (row) => (
+      accessorKey: 'asset_code',
+      cell: (row) => (
         <div>
           <div style={{ fontWeight: 600, color: 'var(--primary-800)' }}>
             {row.dtc_number ? `DTC-${row.dtc_number}` : row.asset_code}
@@ -129,7 +129,7 @@ export default function AssetsPage() {
     },
     {
       header: 'Capacity & Phase',
-      render: (row) => (
+      cell: (row) => (
         <div>
           <div style={{ fontWeight: 600 }}>{row.capacity || '—'}</div>
           <span style={{
@@ -147,7 +147,7 @@ export default function AssetsPage() {
     },
     {
       header: 'Make & Condition',
-      render: (row) => (
+      cell: (row) => (
         <div>
           <div>{row.make || '—'}</div>
           <span style={{ fontSize: '11px', color: 'var(--gray-500)', textTransform: 'capitalize' }}>
@@ -158,7 +158,7 @@ export default function AssetsPage() {
     },
     {
       header: 'Location / Coordinates',
-      render: (row) => (
+      cell: (row) => (
         <div style={{ fontSize: '13px' }}>
           <div>{row.village_name || row.location_office?.name || '—'}</div>
           {row.latitude && row.longitude && (
@@ -171,7 +171,7 @@ export default function AssetsPage() {
     },
     {
       header: 'Actions',
-      render: (row) => (
+      cell: (row) => (
         <Button size="sm" variant="ghost" icon={Edit2} onClick={() => handleOpenModal(row)}>
           Edit
         </Button>

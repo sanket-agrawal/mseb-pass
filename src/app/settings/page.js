@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const [orgName, setOrgName] = useState('महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEDCL)');
+  const [orgName, setOrgName] = useState('महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEB)');
   const [branchName, setBranchName] = useState('गाळण शाखा-दोंडाईचा जि.धुळे (Sub Division Dondaicha)');
   const [contractorName, setContractorName] = useState('M/S Standard Electrotech Service');
   const [defaultRemarks, setDefaultRemarks] = useState('वरील सर्व रोहित्र एल.टी. बुशिंग, एच.टी. बुशिंग व ऑईल पातळी तपासून बघितले. ट्रान्सफॉर्मर सुस्थितीत आहे.');

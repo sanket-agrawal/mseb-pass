@@ -42,9 +42,9 @@ export default function BarChart({ data = [] }) {
                   width: '100%',
                   maxWidth: 40,
                   height: `${heightPercent}%`,
-                  background: 'linear-gradient(to top, var(--primary-600), var(--primary-400))',
+                  backgroundColor: 'var(--primary-600)',
                   borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0',
-                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.15)',
                   transition: 'height 0.4s ease'
                 }}
               />

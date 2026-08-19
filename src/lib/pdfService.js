@@ -3,11 +3,12 @@ import { pdf } from '@react-pdf/renderer';
 import GatePassPDF from '@/components/gatepass/GatePassPDF';
 
 export function getGatePassFilename(gatePass) {
-  if (!gatePass) return 'MSEB_GatePass.pdf';
-  const serial = gatePass.serial_number || gatePass.id;
+  if (!gatePass) return 'GatePass.pdf';
+  const reference = gatePass.display_id || gatePass.serial_number || gatePass.id;
   const type = gatePass.type || 'outward';
-  const date = gatePass.date || new Date().toISOString().split('T')[0];
-  return `MSEB_GatePass_${serial}_${type}_${date}.pdf`;
+  const rawDate = gatePass.date || new Date().toISOString();
+  const date = rawDate.split('T')[0];
+  return `${reference}_${date}_${type}.pdf`;
 }
 
 export async function generateGatePassPDFBlob(gatePassData) {

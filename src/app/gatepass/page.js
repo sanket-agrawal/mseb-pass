@@ -65,7 +65,12 @@ export default function GatePassDirectoryPage() {
     if (isAdmin && !isSuperAdmin) {
       const userDiv = (user?.division || user?.office?.division || 'Dhule').toLowerCase();
       const passDiv = (p.destination_division || p.from_office?.division || 'Dhule').toLowerCase();
-      if (!passDiv.includes(userDiv) && !userDiv.includes(passDiv)) {
+      
+      const isDhuleDondaichaMatch = 
+        (userDiv.includes('dhule') || userDiv.includes('dondaicha')) &&
+        (passDiv.includes('dhule') || passDiv.includes('dondaicha'));
+
+      if (!passDiv.includes(userDiv) && !userDiv.includes(passDiv) && !isDhuleDondaichaMatch) {
         return false;
       }
     }
