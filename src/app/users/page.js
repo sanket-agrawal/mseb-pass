@@ -198,7 +198,7 @@ export default function UsersPage() {
         First_Name: 'Ramesh',
         Last_Name: 'Patil',
         Mobile: '9881122334',
-        Email: 'ramesh.patil@mseb.gov.in',
+        Email: 'ramesh.patil@domain.gov.in',
         Designation: 'Junior Engineer',
         Role: 'gate_pass_creator',
         Initial_Password: 'Password@123',
@@ -208,7 +208,7 @@ export default function UsersPage() {
         First_Name: 'Suresh',
         Last_Name: 'Joshi',
         Mobile: '9764433221',
-        Email: 'suresh.joshi@mseb.gov.in',
+        Email: 'suresh.joshi@domain.gov.in',
         Designation: 'Line Inspector',
         Role: 'gate_pass_viewer',
         Initial_Password: 'Password@123',
@@ -218,7 +218,7 @@ export default function UsersPage() {
     const ws = XLSX.utils.json_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Users');
-    XLSX.writeFile(wb, 'mseb_user_bulk_template.xlsx');
+    XLSX.writeFile(wb, 'user_bulk_template.xlsx');
     toast.success('Downloaded User Bulk Upload Template');
   };
 
@@ -251,7 +251,7 @@ export default function UsersPage() {
           designation: row.Designation || row.designation || null,
           role: (row.Role || row.role || 'gate_pass_viewer').toLowerCase().replace(/\s+/g, '_'),
           roles: [(row.Role || row.role || 'gate_pass_viewer').toLowerCase().replace(/\s+/g, '_')],
-          password: row.Initial_Password || row.password || 'Mseb@123',
+          password: row.Initial_Password || row.password || 'Password@123',
         }));
 
         toast.loading(`Importing ${formattedUsers.length} users...`, { id: 'bulk-import-toast' });
@@ -359,7 +359,7 @@ export default function UsersPage() {
                         <div style={{ fontWeight: 700, color: 'var(--gray-900)' }}>
                           {u.full_name || `${u.first_name} ${u.last_name}`}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--gray-500)' }}>{u.designation || 'MSEB Official'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--gray-500)' }}>{u.designation || 'Department Official'}</div>
                       </td>
                       <td style={{ padding: '12px', fontWeight: 700, color: 'var(--primary-700)' }}>
                         {u.cpf_number}
@@ -464,7 +464,7 @@ export default function UsersPage() {
             <Input
               label="Email Address (Optional)"
               type="email"
-              placeholder="e.g. official@mseb.gov.in"
+              placeholder="e.g. official@domain.gov.in"
               value={formData.email}
               onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
             />

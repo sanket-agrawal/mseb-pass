@@ -24,6 +24,25 @@ export function isAuthenticated() {
   return !!localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+export async function validateCurrentSession() {
+  if (!isAuthenticated()) return null;
+  try {
+    const res = await authAPI.me();
+    if (res && (res.success || res.data)) {
+      const user = res.data || res.user;
+      if (user) {
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+        return user;
+      }
+    }
+    logoutUser();
+    return null;
+  } catch (err) {
+    logoutUser();
+    return null;
+  }
+}
+
 export function setSession(user, accessToken, refreshToken) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));

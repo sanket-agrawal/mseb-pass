@@ -10,7 +10,7 @@ export function formatWhatsAppMessage(gatePass, viewUrl) {
   const mat = gatePass.materials?.[0] || {};
 
   return `
-📋 *MSEB Digital Gate Pass*
+📋 *Digital Gate Pass*
 ━━━━━━━━━━━━━━━━━━
 🔢 *Gate Pass No:* ${gatePass.serial_number || gatePass.id}
 📅 *Date:* ${gatePass.date}
@@ -36,7 +36,7 @@ export function formatWhatsAppMessage(gatePass, viewUrl) {
 🔗 *View/Download:* ${viewUrl}
 
 ━━━━━━━━━━━━━━━━━━
-_MSEB Sub Division Dondaicha_
+_Sub Division Dondaicha_
 _Digital Gate Pass System_
 `.trim();
 }

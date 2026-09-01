@@ -1,14 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Zap } from 'lucide-react';
+import LOGO_BASE64 from '@/lib/logoBase64';
 
 export default function GatePassPreview({ data, className = '' }) {
   if (!data) return null;
 
   const isOutward = data.type === 'outward';
   const materials = data.materials || [];
-  const officeName = data.from_office?.name || data.sender_designation || 'MSEB Office';
+  const officeName = data.from_office?.name || data.sender_designation || 'Sub Division Office';
+  const divisionName = data.division?.name || data.destination_division || data.from_office?.division || data.from_office?.parent?.name || 'Dondaicha Division';
   const paperBgColor = isOutward ? '#FFF9C4' : '#FCE4EC';
   const paperBorderColor = isOutward ? '#1e293b' : '#be185d';
 
@@ -17,14 +18,21 @@ export default function GatePassPreview({ data, className = '' }) {
       <div className="preview-container" style={{ backgroundColor: paperBgColor, borderColor: paperBorderColor }}>
         {/* Header */}
         <div className="preview-header">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
-            <Zap style={{ width: 22, height: 22, color: 'var(--primary-700)', fill: 'currentColor' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 4 }}>
+            <img
+              src={LOGO_BASE64}
+              alt="Logo"
+              style={{ height: 42, width: 'auto', objectFit: 'contain' }}
+            />
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEB)
+              महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित
             </h2>
           </div>
-          <p style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600, margin: 0 }}>
-            {officeName} (Gate Pass System)
+          <div style={{ fontSize: '0.9rem', color: '#1e3a5f', fontWeight: 700, margin: '2px 0' }}>
+            विभाग (Division): {divisionName}
+          </div>
+          <p style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, margin: 0 }}>
+            {officeName} • Gate Pass System
           </p>
           <div
             className="preview-pass-badge"

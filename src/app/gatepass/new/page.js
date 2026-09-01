@@ -197,7 +197,7 @@ function GatePassNewFormContent() {
                 Creating Gate Pass...
               </h3>
               <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
-                Generating digital serial number, saving job records, & syncing with MSEB database.
+                Generating digital serial number, saving job records, & syncing with database.
               </p>
             </div>
           </div>

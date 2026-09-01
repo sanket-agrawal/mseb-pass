@@ -1,4 +1,4 @@
-﻿export const GATEPASS_STATUS = {
+export const GATEPASS_STATUS = {
   ISSUED: 'issued',
   CREDITED: 'credited',
   COMPLETED: 'completed',
@@ -53,9 +53,10 @@ export const NAV_ITEMS = [
 ];
 
 export const APP_INFO = {
-  name: 'MSEB GatePass',
-  fullName: 'MSEB Gate Pass Management System',
+  name: 'Digital GatePass',
+  fullName: 'Digital Gate Pass Management System',
   subdivision: 'Sub Division Dondaicha',
-  contractor: 'MSEB Transport & Operations',
-  contactEmail: 'support@mseb-gatepass.com'
+  division: 'Dondaicha Division',
+  contractor: 'Transport & Operations',
+  contactEmail: 'support@gatepass-portal.com'
 };

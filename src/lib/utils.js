@@ -19,7 +19,7 @@ export function generateGatePassId(type = 'OUT') {
   const prefix = type.toUpperCase() === 'INWARD' ? 'IN' : 'OUT';
   const year = new Date().getFullYear();
   const randomNum = Math.floor(1000 + Math.random() * 9000);
-  return `MSEB-${prefix}-${year}-${randomNum}`;
+  return `GP-${prefix}-${year}-${randomNum}`;
 }
 
 export function getStatusBadgeVariant(status) {

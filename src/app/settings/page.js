@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const [orgName, setOrgName] = useState('महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEB)');
+  const [orgName, setOrgName] = useState('महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित');
   const [branchName, setBranchName] = useState('गाळण शाखा-दोंडाईचा जि.धुळे (Sub Division Dondaicha)');
   const [contractorName, setContractorName] = useState('M/S Standard Electrotech Service');
   const [defaultRemarks, setDefaultRemarks] = useState('वरील सर्व रोहित्र एल.टी. बुशिंग, एच.टी. बुशिंग व ऑईल पातळी तपासून बघितले. ट्रान्सफॉर्मर सुस्थितीत आहे.');
@@ -67,10 +67,10 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 'var(--text-base)', color: 'var(--gray-900)' }}>
-                  {user?.name || 'MSEB Admin'}
+                  {user?.name || 'System Admin'}
                 </h3>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                  {user?.email || 'admin@mseb.com'} • <strong style={{ color: 'var(--primary-700)' }}>{user?.designation || 'Official'}</strong>
+                  {user?.email || 'admin@domain.com'} • <strong style={{ color: 'var(--primary-700)' }}>{user?.designation || 'Official'}</strong>
                 </span>
               </div>
             </div>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--gray-700)' }}>
-            Are you sure you want to log out of the <strong>MSEB Digital Gate Pass System</strong>?
+            Are you sure you want to log out of the <strong>Digital Gate Pass System</strong>?
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: '0.5rem' }}>

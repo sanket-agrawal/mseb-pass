@@ -55,7 +55,7 @@ export default function NotFound() {
         </h2>
 
         <p style={{ fontSize: 'var(--text-sm)', color: '#94a3b8', marginBottom: '2rem' }}>
-          The requested page URL or gate pass ID could not be located in the MSEB system registry.
+          The requested page URL or gate pass ID could not be located in the system registry.
         </p>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>

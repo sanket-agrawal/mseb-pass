@@ -35,8 +35,8 @@ function generateEmailHTML(gatePass, viewUrl, recipientName) {
   <body>
     <div class="container">
       <div class="header">
-        <h1>MSEB Digital Gate Pass</h1>
-        <p>महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित (MSEB Dondaicha)</p>
+        <h1>Digital Gate Pass</h1>
+        <p>महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित</p>
         <span class="badge">${typeStr}</span>
       </div>
 
@@ -63,7 +63,7 @@ function generateEmailHTML(gatePass, viewUrl, recipientName) {
           </div>
           <div class="field">
             <div class="label">Transformer Capacity & Make</div>
-            <div class="value">${mat.capacity || '100 KVA'} - ${mat.make || 'MSEB Unit'} (Sr: ${mat.serial_number || '-'})</div>
+            <div class="value">${mat.capacity || '100 KVA'} - ${mat.make || 'Unit'} (Sr: ${mat.serial_number || '-'})</div>
           </div>
         </div>
 
@@ -73,7 +73,7 @@ function generateEmailHTML(gatePass, viewUrl, recipientName) {
       </div>
 
       <div class="footer">
-        <p>MSEB Sub Division Dondaicha, Dist. Dhule</p>
+        <p>Sub Division Dondaicha, Dist. Dhule</p>
         <p>Gate Pass Reference: ${gatePass.id}</p>
       </div>
     </div>
@@ -100,9 +100,9 @@ export async function POST(request) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'MSEB Gate Pass <onboarding@resend.dev>',
+      from: 'Digital Gate Pass <onboarding@resend.dev>',
       to: recipientEmail,
-      subject: `MSEB Gate Pass #${gatePass.serial_number || gatePass.id} - ${gatePass.destination_substation}`,
+      subject: `Gate Pass #${gatePass.serial_number || gatePass.id} - ${gatePass.destination_substation}`,
       html: generateEmailHTML(gatePass, viewUrl, recipientName)
     });
 

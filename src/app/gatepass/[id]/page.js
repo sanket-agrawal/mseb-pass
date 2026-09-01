@@ -418,7 +418,7 @@ export default function GatePassDetailPage({ params }) {
                 <div>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>CONTRACTOR / VENDOR (ठेकेदारास)</span>
                   <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--gray-800)' }}>
-                    {pass.contractor_name || pass.contractor?.company_name || pass.contractor?.name || 'MSEB Partner'}
+                    {pass.contractor_name || pass.contractor?.company_name || pass.contractor?.name || '-'}
                   </div>
                 </div>
               </div>

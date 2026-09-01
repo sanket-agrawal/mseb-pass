@@ -116,7 +116,7 @@ export default function ContractorsPage() {
       ),
     },
     {
-      header: 'MSEB Vendor ID',
+      header: 'Vendor ID',
       accessorKey: 'mseb_vendor_id',
       cell: (row) => (
         <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--primary-700)' }}>
@@ -125,7 +125,7 @@ export default function ContractorsPage() {
       ),
     },
     {
-      header: 'MSEB LOE',
+      header: 'LOE Reference',
       accessorKey: 'mseb_loe',
       cell: (row) => row.mseb_loe || '—',
     },
@@ -211,13 +211,13 @@ export default function ContractorsPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <Input
-              label="MSEB Vendor ID"
+              label="Vendor ID"
               placeholder="e.g. VEN-2026-001"
               value={formData.mseb_vendor_id}
               onChange={(e) => setFormData(p => ({ ...p, mseb_vendor_id: e.target.value }))}
             />
             <Input
-              label="MSEB LOE No."
+              label="LOE Reference No."
               placeholder="e.g. LOE-5512"
               value={formData.mseb_loe}
               onChange={(e) => setFormData(p => ({ ...p, mseb_loe: e.target.value }))}
@@ -226,7 +226,7 @@ export default function ContractorsPage() {
 
           <SearchableSelect
             label="Mapped Office"
-            placeholder="Select MSEB office..."
+            placeholder="Select office..."
             value={formData.office_id}
             onChange={(val) => setFormData(p => ({ ...p, office_id: val }))}
             options={offices.map(o => ({ value: o.id, label: `${o.name} (${o.type})` }))}

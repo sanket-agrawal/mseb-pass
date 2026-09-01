@@ -28,7 +28,7 @@ export default function ShareModal({ isOpen, onClose, gatePass }) {
     const targetMobile = mobile.trim() || gatePass.driver_mobile || gatePass.line_staff_mobile || '';
     const cleanPhone = targetMobile.replace(/\D/g, '');
 
-    const text = encodeURIComponent(`MSEB Gate Pass #${gatePass.display_id || gatePass.id} has been issued.\nView details: ${publicUrl}`);
+    const text = encodeURIComponent(`Digital Gate Pass #${gatePass.display_id || gatePass.id} has been issued.\nView details: ${publicUrl}`);
     const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://api.whatsapp.com/send?text=${text}`;
 
     try {

@@ -55,7 +55,7 @@ export default function MandatoryPasswordModal() {
     try {
       toast.loading('Updating password...', { id: 'change-pwd-toast' });
       await updateUserPassword(currentPassword, newPassword);
-      toast.success('Password updated successfully! Welcome to MSEB Gate Pass System.', { id: 'change-pwd-toast' });
+      toast.success('Password updated successfully! Welcome to Digital Gate Pass System.', { id: 'change-pwd-toast' });
       setShowModal(false);
       // Reload page to reflect updated session
       setTimeout(() => {

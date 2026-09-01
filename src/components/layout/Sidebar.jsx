@@ -29,6 +29,7 @@ import { toast } from 'react-hot-toast';
 
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import LOGO_BASE64 from '@/lib/logoBase64';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -64,12 +65,16 @@ export default function Sidebar() {
     <aside className="app-sidebar">
       {/* Brand Header */}
       <div className="sidebar-brand">
-        <div className="sidebar-logo">
-          <Zap style={{ width: 22, height: 22, color: 'var(--accent-500)', fill: 'currentColor' }} />
+        <div className="sidebar-logo" style={{ backgroundColor: '#ffffff', padding: '2px', borderRadius: '6px' }}>
+          <img
+            src={LOGO_BASE64}
+            alt="Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
           <span style={{ fontSize: 'var(--text-base)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-            MSEB Gate Pass
+            Digital Gate Pass
           </span>
           <span style={{ fontSize: '11px', color: 'var(--accent-400)', fontWeight: 700 }}>
             Dondaicha Division
@@ -123,7 +128,7 @@ export default function Sidebar() {
         </button>
 
         <div style={{ fontSize: '10px', color: 'var(--gray-400)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <div>MSEB Digital Initiative</div>
+          <div>Digital Gate Pass Initiative</div>
           <div style={{ color: 'var(--accent-400)', fontWeight: 700 }}>Dondaicha Division</div>
         </div>
       </div>
@@ -135,7 +140,7 @@ export default function Sidebar() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--gray-700)' }}>
-            Are you sure you want to log out of the <strong>MSEB Digital Gate Pass System</strong>?
+            Are you sure you want to log out of the <strong>Digital Gate Pass System</strong>?
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: '0.5rem' }}>

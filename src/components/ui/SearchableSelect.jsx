@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useLayoutEffect, useId } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useId, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Search, X, Check } from 'lucide-react';
+import { ChevronDown, Search, X, Check, Loader2 } from 'lucide-react';
 
 export default function SearchableSelect({
   label,
   value = '',
   onChange,
   options = [],
+  onSearch,
   placeholder = 'Select or search...',
   error,
   required = false,
@@ -21,22 +22,26 @@ export default function SearchableSelect({
   const selectId = id || generatedId;
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const debounceTimerRef = useRef(null);
 
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [asyncOptions, setAsyncOptions] = useState(null);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Find matching option for current value
-  const currentOption = options.find(
+  // Determine current option from options or asyncOptions
+  const allKnownOptions = asyncOptions ? [...asyncOptions, ...options] : options;
+  const currentOption = allKnownOptions.find(
     (opt) => (typeof opt === 'object' ? opt.value : opt) === value
   );
 
-  // Sync search term with value or selected option label
+  // Sync search term with value or selected option label when closed
   useEffect(() => {
     if (!isOpen) {
       if (currentOption) {
@@ -46,6 +51,22 @@ export default function SearchableSelect({
       }
     }
   }, [value, isOpen, currentOption]);
+
+  // Debounced server search execution
+  const executeSearch = useCallback(async (term) => {
+    if (!onSearch) return;
+    setIsSearching(true);
+    try {
+      const results = await onSearch(term);
+      if (Array.isArray(results)) {
+        setAsyncOptions(results);
+      }
+    } catch (err) {
+      console.error('Search error in SearchableSelect:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [onSearch]);
 
   // Measure position for fixed portal placement at document root level
   const updatePosition = () => {
@@ -100,47 +121,70 @@ export default function SearchableSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [selectId]);
 
-  // Filter options based on search input
-  const filteredOptions = options.filter((opt) => {
-    if (!searchTerm || !isOpen) return true;
-    const term = searchTerm.toLowerCase().trim();
-    if (typeof opt === 'object') {
-      const valMatch = (opt.value || '').toString().toLowerCase().includes(term);
-      const labelMatch = (opt.label || '').toString().toLowerCase().includes(term);
-      const subtextMatch = (opt.subtext || '').toString().toLowerCase().includes(term);
-      return valMatch || labelMatch || subtextMatch;
-    }
-    return opt.toString().toLowerCase().includes(term);
-  });
+  // Filter or use async options
+  const displayedOptions = asyncOptions !== null
+    ? asyncOptions
+    : options.filter((opt) => {
+        if (!searchTerm || !isOpen) return true;
+        const term = searchTerm.toLowerCase().trim();
+        if (typeof opt === 'object') {
+          const valMatch = (opt.value || '').toString().toLowerCase().includes(term);
+          const labelMatch = (opt.label || '').toString().toLowerCase().includes(term);
+          const subtextMatch = (opt.subtext || '').toString().toLowerCase().includes(term);
+          return valMatch || labelMatch || subtextMatch;
+        }
+        return opt.toString().toLowerCase().includes(term);
+      });
 
   const handleInputChange = (e) => {
     const val = e.target.value;
     setSearchTerm(val);
     setIsOpen(true);
     updatePosition();
+
     if (allowCustom && onChange) {
       onChange(val, null);
+    }
+
+    if (onSearch) {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        executeSearch(val);
+      }, 250);
     }
   };
 
   const handleSelectOption = (opt) => {
     const optValue = typeof opt === 'object' ? opt.value : opt;
     const optLabel = typeof opt === 'object' ? opt.label : opt;
-    const optData = typeof opt === 'object' ? opt.data || opt : opt;
 
     setSearchTerm(optLabel);
     setIsOpen(false);
     if (onChange) {
-      onChange(optValue, optData);
+      onChange(optValue, opt);
     }
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
     setSearchTerm('');
+    setAsyncOptions(null);
     if (onChange) onChange('', null);
+    if (onSearch) {
+      executeSearch('');
+    }
     setIsOpen(true);
     updatePosition();
+  };
+
+  const handleFocus = () => {
+    updatePosition();
+    setIsOpen(true);
+    if (onSearch && asyncOptions === null) {
+      executeSearch(searchTerm);
+    }
   };
 
   const cleanPortalClass = `popover-portal-${selectId.replace(/:/g, '')}`;
@@ -164,8 +208,25 @@ export default function SearchableSelect({
         padding: '6px',
       }}
     >
-      {filteredOptions.length > 0 ? (
-        filteredOptions.map((opt, idx) => {
+      {isSearching ? (
+        <div
+          style={{
+            padding: '14px 12px',
+            textAlign: 'center',
+            fontSize: '13px',
+            color: '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            fontWeight: 500,
+          }}
+        >
+          <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite', color: '#4f46e5' }} />
+          Searching records...
+        </div>
+      ) : displayedOptions.length > 0 ? (
+        displayedOptions.map((opt, idx) => {
           const optVal = typeof opt === 'object' ? opt.value : opt;
           const optLabel = typeof opt === 'object' ? opt.label : opt;
           const optSubtext = typeof opt === 'object' ? opt.subtext : null;
@@ -184,7 +245,7 @@ export default function SearchableSelect({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '2px',
-                marginBottom: idx < filteredOptions.length - 1 ? '2px' : '0',
+                marginBottom: idx < displayedOptions.length - 1 ? '2px' : '0',
                 transition: 'background-color 0.12s ease',
               }}
               onMouseEnter={(e) => {
@@ -296,15 +357,12 @@ export default function SearchableSelect({
           value={searchTerm}
           placeholder={placeholder}
           onChange={handleInputChange}
-          onFocus={() => {
-            updatePosition();
-            setIsOpen(true);
-          }}
+          onFocus={handleFocus}
           style={{
             width: '100%',
             height: '40px',
             paddingLeft: '36px',
-            paddingRight: searchTerm ? '52px' : '36px',
+            paddingRight: isSearching ? '64px' : searchTerm ? '52px' : '36px',
             fontSize: '13.5px',
             fontWeight: 500,
             color: '#0f172a',
@@ -349,6 +407,16 @@ export default function SearchableSelect({
             paddingLeft: '2px',
           }}
         >
+          {isSearching && (
+            <Loader2
+              style={{
+                width: 14,
+                height: 14,
+                color: '#6366f1',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
+          )}
           {searchTerm && !disabled && (
             <button
               type="button"

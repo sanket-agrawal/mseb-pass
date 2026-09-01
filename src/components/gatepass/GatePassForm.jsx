@@ -206,23 +206,70 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
     loadMasterData();
   }, []);
 
-  const handleContractorSelect = (contractorId) => {
-    const selected = contractorOptions.find(c => c.value === contractorId);
+  const handleSearchAssets = async (query) => {
+    try {
+      const res = await assetAPI.list({ search: query, limit: 50 });
+      const assets = res.data || res.assets || [];
+      return assets.map(a => ({
+        value: a.dtc_number || a.asset_code,
+        label: `${a.dtc_number ? `DTC-${a.dtc_number}` : a.asset_code} - ${a.capacity || '—'} (${a.village_name || a.location_substation || ''})`,
+        subtext: `Make: ${a.make || '—'} | Sr: ${a.serial_number || '—'}`,
+        asset: a
+      }));
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const handleSearchCPFs = async (query) => {
+    try {
+      const res = await userAPI.list({ search: query, limit: 50 });
+      const users = res.data || res.users || [];
+      return users.filter(u => u.cpf_number).map(u => ({
+        value: u.cpf_number,
+        label: `${u.cpf_number} - ${u.first_name} ${u.last_name || ''} (${u.designation || 'Staff'})`,
+        subtext: `Phone: ${u.mobile || '—'}`,
+        user: u
+      }));
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const handleSearchContractors = async (query) => {
+    try {
+      const res = await contractorAPI.list(query);
+      const contractors = res.data || res.contractors || [];
+      return contractors.map(c => ({
+        value: c.id,
+        label: `${c.contractor_firm || c.first_name} (${c.vendor_code || 'Contractor'})`,
+        subtext: `Phone: ${c.mobile || '—'}`,
+        contractor: c
+      }));
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const handleContractorSelect = (contractorId, item) => {
+    const selected = item?.contractor || (item?.id ? item : null) || contractorOptions.find(c => c.value === contractorId)?.contractor;
     setFormData(prev => ({
       ...prev,
       contractor_id: contractorId,
-      contractor_name: selected ? (selected.contractor.contractor_firm || selected.contractor.first_name) : ''
+      contractor_name: selected ? (selected.contractor_firm || selected.first_name || '') : prev.contractor_name
     }));
   };
 
   const handleCPFSelect = (cpf, item) => {
-    if (item && item.user) {
+    const user = item?.user || (item?.cpf_number ? item : null) || cpfOptions.find(c => c.value === cpf)?.user;
+    if (user) {
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.full_name || '';
       setFormData(prev => ({
         ...prev,
-        line_staff_id: item.user.id,
-        line_staff_cpf: item.user.cpf_number,
-        line_staff_name: `${item.user.first_name} ${item.user.last_name || ''}`.trim(),
-        line_staff_mobile: item.user.mobile || prev.line_staff_mobile
+        line_staff_id: user.id || prev.line_staff_id,
+        line_staff_cpf: user.cpf_number || cpf,
+        line_staff_name: fullName || prev.line_staff_name,
+        line_staff_mobile: user.mobile || prev.line_staff_mobile || ''
       }));
     } else {
       setFormData(prev => ({
@@ -232,18 +279,19 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
     }
   };
 
-  const handleDestinationOfficeSelect = (officeId) => {
-    const selected = officeOptions.find(o => o.value === officeId);
+  const handleDestinationOfficeSelect = (officeId, item) => {
+    const selected = item?.office || (item?.name ? item : null) || officeOptions.find(o => o.value === officeId)?.office;
     setFormData(prev => ({
       ...prev,
       to_office_id: officeId,
-      destination_substation: selected ? selected.office.name : ''
+      destination_substation: selected ? selected.name : prev.destination_substation
     }));
   };
 
   const handleJobRecordCPFSelect = (idx, type, cpf, item) => {
     const field = type === 'healthy' ? 'healthy_job_record' : 'failed_job_record';
     const key = type === 'healthy' ? 'tested_by_cpf' : 'recorded_by_cpf';
+    const user = item?.user || (item?.cpf_number ? item : null) || cpfOptions.find(c => c.value === cpf)?.user;
 
     setFormData(prev => {
       const nextMaterials = [...prev.materials];
@@ -252,7 +300,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         [field]: {
           ...nextMaterials[idx][field],
           [key]: cpf,
-          ...(item?.user ? { [`${type === 'healthy' ? 'tested' : 'recorded'}_by_id`]: item.user.id } : {})
+          ...(user ? { [`${type === 'healthy' ? 'tested' : 'recorded'}_by_id`]: user.id } : {})
         }
       };
       return { ...prev, materials: nextMaterials };
@@ -260,7 +308,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
   };
 
   const handleDTCSelect = async (idx, dtcVal, item) => {
-    let asset = item?.asset;
+    let asset = item?.asset || (item?.asset_code || item?.dtc_number ? item : null) || dtcOptions.find(d => d.value === dtcVal)?.asset;
     if (!asset && dtcVal) {
       try {
         const res = await assetAPI.lookupDTC(dtcVal);
@@ -526,9 +574,10 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
           <SearchableSelect
             label="Contractor / Transport Agency"
             value={formData.contractor_id}
-            onChange={(val) => handleContractorSelect(val)}
+            onChange={(val, item) => handleContractorSelect(val, item)}
             options={contractorOptions}
-            placeholder="Select contractor..."
+            onSearch={handleSearchContractors}
+            placeholder="Select or search contractor..."
             allowCustom={false}
           />
         </div>
@@ -588,6 +637,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
                   value={mat.dtc_number}
                   onChange={(val, item) => handleDTCSelect(idx, val, item)}
                   options={dtcOptions}
+                  onSearch={handleSearchAssets}
                   placeholder="Select or enter DTC..."
                   allowCustom={true}
                 />
@@ -714,6 +764,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
                       value={mat.failed_job_record?.recorded_by_cpf || formData.line_staff_cpf || ''}
                       onChange={(val, item) => handleJobRecordCPFSelect(idx, 'failed', val, item)}
                       options={cpfOptions}
+                      onSearch={handleSearchCPFs}
                       placeholder="Search CPF Number..."
                       allowCustom={true}
                     />
@@ -738,6 +789,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
                       value={mat.healthy_job_record?.tested_by_cpf || formData.line_staff_cpf || ''}
                       onChange={(val, item) => handleJobRecordCPFSelect(idx, 'healthy', val, item)}
                       options={cpfOptions}
+                      onSearch={handleSearchCPFs}
                       placeholder="Search CPF Number..."
                       allowCustom={true}
                     />
@@ -812,6 +864,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
             value={formData.line_staff_cpf}
             onChange={(val, item) => handleCPFSelect(val, item)}
             options={cpfOptions}
+            onSearch={handleSearchCPFs}
             placeholder="Select or enter Staff CPF..."
             allowCustom={true}
           />

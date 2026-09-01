@@ -98,7 +98,7 @@ export function computeStats(allPasses = [], datePreset = 'all') {
   // Contractor Performance Leaderboard
   const contractorCounts = {};
   filteredPasses.forEach(p => {
-    const contractor = p.contractor_name || p.contractor?.contractor_firm || p.contractor?.first_name || 'Direct MSEB';
+    const contractor = p.contractor_name || p.contractor?.contractor_firm || p.contractor?.first_name || 'Direct / In-House';
     contractorCounts[contractor] = (contractorCounts[contractor] || 0) + 1;
   });
 

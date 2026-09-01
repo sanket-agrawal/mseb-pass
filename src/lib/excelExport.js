@@ -117,7 +117,7 @@ export function exportGatePassesToExcel(gatePasses = [], options = {}) {
     XLSX.utils.book_append_sheet(wb, driverSheet, 'Driver Summary');
   }
 
-  const filename = `MSEB_GatePasses_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const filename = `GatePasses_${new Date().toISOString().split('T')[0]}.xlsx`;
   XLSX.writeFile(wb, filename);
   return filename;
 }

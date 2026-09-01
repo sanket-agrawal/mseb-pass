@@ -125,7 +125,7 @@ export default function SubstationsPage() {
   return (
     <PageWrapper
       title="Substations & Offices Directory"
-      subtitle="MSEB sub-stations, divisions, and EHV depots."
+      subtitle="Power sub-stations, divisions, and EHV depots."
       actions={
         <Button variant="accent" icon={Plus} onClick={handleOpenAdd}>
           Add Substation

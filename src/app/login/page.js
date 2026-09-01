@@ -2,17 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginWithPassword, requestOTP, verifyOTP, isAuthenticated } from '@/lib/auth';
-import { Zap, Eye, EyeOff, Lock, Mail, ArrowRight, Phone, MessageSquare, Loader2 } from 'lucide-react';
+import { loginWithPassword, requestOTP, verifyOTP, isAuthenticated, validateCurrentSession, logoutUser, ACCESS_TOKEN_KEY } from '@/lib/auth';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, Phone, MessageSquare, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import LOGO_BASE64 from '@/lib/logoBase64';
 
 export default function LoginPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('password'); // 'password' | 'otp'
 
   // Password state
-  const [identifier, setIdentifier] = useState('admin@mseb.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // OTP state
@@ -24,10 +25,36 @@ export default function LoginPage() {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    let isMounted = true;
+
+    async function checkExistingAuth() {
+      if (!isAuthenticated()) return;
+
       setRedirecting(true);
-      router.replace('/dashboard');
+      try {
+        const user = await validateCurrentSession();
+        if (user && isMounted) {
+          const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+          if (token) {
+            document.cookie = `mseb_auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+          }
+          router.replace('/dashboard');
+        } else if (isMounted) {
+          setRedirecting(false);
+        }
+      } catch {
+        if (isMounted) {
+          logoutUser();
+          setRedirecting(false);
+        }
+      }
     }
+
+    checkExistingAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   const handlePasswordSubmit = async (e) => {
@@ -138,26 +165,31 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div
             style={{
-              width: 54,
-              height: 54,
-              borderRadius: '50%',
-              backgroundColor: 'var(--primary-600)',
-              color: '#ffffff',
+              width: 58,
+              height: 58,
+              borderRadius: '12px',
+              backgroundColor: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 12px auto',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              padding: '6px',
+              border: '1px solid #e2e8f0',
             }}
           >
-            <Zap style={{ width: 28, height: 28, fill: 'currentColor' }} />
+            <img
+              src={LOGO_BASE64}
+              alt="Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
           </div>
 
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-            MSEB Digital Gate Pass
+            Digital Gate Pass
           </h1>
           <p style={{ fontSize: 'var(--text-xs)', color: '#475569', margin: 0, fontWeight: 600 }}>
-            महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्या. (MSEB)
+            महाराष्ट्र राज्य विद्युत वितरण कंपनी मर्यादित
           </p>
         </div>
 
@@ -225,7 +257,7 @@ export default function LoginPage() {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="admin@mseb.com or CPF"
+                  placeholder="Email or CPF Number"
                   style={{
                     width: '100%',
                     padding: '10px 12px 10px 38px',
@@ -421,25 +453,6 @@ export default function LoginPage() {
             )}
           </div>
         )}
-
-        {/* Demo Credentials Footer */}
-        <div
-          style={{
-            marginTop: '1.75rem',
-            padding: '10px 12px',
-            backgroundColor: '#f8fafc',
-            borderRadius: 'var(--radius-md)',
-            border: '1px dashed #cbd5e1',
-            fontSize: '11px',
-            color: '#475569',
-            textAlign: 'center',
-          }}
-        >
-          <strong>Default Admin Login:</strong>
-          <div style={{ fontFamily: 'var(--font-mono)', marginTop: 2, color: 'var(--primary-700)', fontWeight: 700 }}>
-            admin@mseb.com / Admin@123
-          </div>
-        </div>
       </div>
     </div>
   );

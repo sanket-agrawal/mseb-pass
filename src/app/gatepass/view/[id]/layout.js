@@ -1,8 +1,8 @@
 import React from 'react';
 
 export const metadata = {
-  title: 'MSEB Digital Gate Pass View',
-  description: 'Public mobile view for MSEB transformer transport digital gate pass.'
+  title: 'Digital Gate Pass View',
+  description: 'Public mobile view for transformer transport digital gate pass.'
 };
 
 export default function PublicGatePassLayout({ children }) {

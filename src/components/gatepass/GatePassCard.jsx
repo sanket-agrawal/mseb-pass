@@ -82,7 +82,7 @@ export default function GatePassCard({ pass, onView, onDownload }) {
       >
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>TRANSFORMER</div>
           <span style={{ fontWeight: 600, color: 'var(--gray-900)', fontSize: 'var(--text-sm)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {pass.materials?.[0]?.capacity || pass.transformerCapacity || 'Transformer'} - {pass.materials?.[0]?.make || pass.transformerMake || 'MSEB Unit'}
+            {pass.materials?.[0]?.capacity || pass.transformerCapacity || 'Transformer'} - {pass.materials?.[0]?.make || pass.transformerMake || 'Unit'}
           </span>
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)', fontFamily: 'var(--font-mono)' }}>
           Sr. No: {pass.materials?.[0]?.serial_number || pass.transformerSrNo || '-'}

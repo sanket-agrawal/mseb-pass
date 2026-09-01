@@ -7,9 +7,12 @@ export const metadata = {
   title: APP_INFO.fullName,
   description: 'Digital Gate Pass Management System for Maharashtra State Electricity Distribution Company',
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/mseb_logo.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/mseb_logo.png',
   },
 };
 

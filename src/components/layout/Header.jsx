@@ -17,7 +17,7 @@ const getTitleFromPath = (path) => {
   if (path === '/export') return 'Excel Export';
   if (path === '/settings') return 'System Settings';
   if (path === '/login') return 'Login';
-  return 'MSEB Gate Pass';
+  return 'Digital Gate Pass';
 };
 
 export default function Header() {
