@@ -29,19 +29,19 @@ import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { passes, loading, refresh } = useGatePass();
+  const { passes, loading, refresh } = useGatePass({ limit: 100 });
   const [datePreset, setDatePreset] = useState('all');
   const [liveStats, setLiveStats] = useState(null);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     setUser(getAuthUser());
-    fetchStats();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = async (preset = datePreset) => {
     try {
-      const res = await dashboardAPI.stats();
+      const params = preset && preset !== 'all' ? { preset } : {};
+      const res = await dashboardAPI.stats(params);
       if (res && res.data) {
         setLiveStats(res.data);
       }
@@ -49,6 +49,10 @@ export default function DashboardPage() {
       console.warn('Dashboard stats fallback to local analytics:', e);
     }
   };
+
+  useEffect(() => {
+    fetchStats(datePreset);
+  }, [datePreset]);
 
   const stats = useMemo(() => {
     const computed = computeStats(passes, datePreset);
@@ -60,6 +64,10 @@ export default function DashboardPage() {
         creditedCount: liveStats.credited ?? computed.creditedCount,
         completedCount: liveStats.completed ?? computed.completedCount,
         recentPasses: liveStats.recent_passes?.length ? liveStats.recent_passes : computed.recentPasses,
+        monthlyTrend: liveStats.monthly_trend || computed.monthlyTrend,
+        statusDistribution: liveStats.status_distribution || computed.statusDistribution,
+        topSubstations: liveStats.top_substations || computed.topSubstations,
+        contractorPerformance: liveStats.contractor_performance || computed.contractorPerformance,
       };
     }
     return computed;
@@ -120,7 +128,7 @@ export default function DashboardPage() {
       >
         <DateRangeSelector value={datePreset} onChange={setDatePreset} />
 
-        <Button variant="ghost" size="sm" icon={RefreshCw} onClick={() => { refresh(); fetchStats(); }}>
+        <Button variant="ghost" size="sm" icon={RefreshCw} onClick={() => { refresh(); fetchStats(datePreset); }}>
           Refresh Analytics
         </Button>
       </div>
