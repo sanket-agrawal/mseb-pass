@@ -35,7 +35,7 @@ export default function GatePassDirectoryPage() {
   const fetchPasses = async () => {
     setLoading(true);
     try {
-      const filters = {};
+      const filters = { all: true };
       if (activeTab !== 'all' && activeTab !== 'in_transit' && activeTab !== 'delivered') {
         filters.type = activeTab;
       }

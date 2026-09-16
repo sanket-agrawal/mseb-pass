@@ -42,9 +42,14 @@ export function computeStats(allPasses = [], datePreset = 'all') {
 
   // Summary Metrics
   const total = filteredPasses.length;
-  const issuedCount = filteredPasses.filter(p => p.status === 'issued').length;
-  const creditedCount = filteredPasses.filter(p => p.status === 'credited').length;
-  const completedCount = filteredPasses.filter(p => p.status === 'completed').length;
+  const isCredited = (p) =>
+    p.status === 'credited' ||
+    (p.type === 'inward' && (p.linked_gatepass_id || p.linked_gatepass));
+  const isCompleted = (p) => p.status === 'completed';
+
+  const issuedCount = filteredPasses.filter(p => p.type === 'outward').length;
+  const creditedCount = filteredPasses.filter(isCredited).length;
+  const completedCount = filteredPasses.filter(isCompleted).length;
 
   // Monthly Trend (Last 6 months)
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -65,23 +70,11 @@ export function computeStats(allPasses = [], datePreset = 'all') {
   }
 
   // Status Distribution for Donut Chart
-  const statusCounts = {};
-  filteredPasses.forEach(p => {
-    const st = p.status || 'issued';
-    statusCounts[st] = (statusCounts[st] || 0) + 1;
-  });
-
-  const statusColors = {
-    issued: '#3b82f6',
-    credited: '#f59e0b',
-    completed: '#10b981',
-  };
-
-  const statusDistribution = Object.keys(statusCounts).map(status => ({
-    label: GATEPASS_STATUS_CONFIG[status]?.label || status,
-    value: statusCounts[status],
-    color: statusColors[status] || '#64748b'
-  }));
+  const statusDistribution = [
+    { label: 'Issued', value: issuedCount, color: '#3b82f6' },
+    { label: 'Credited', value: creditedCount, color: '#f59e0b' },
+    ...(completedCount ? [{ label: 'Completed', value: completedCount, color: '#10b981' }] : []),
+  ];
 
   // Top 5 Substations
   const subCounts = {};

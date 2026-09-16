@@ -29,7 +29,7 @@ import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { passes, loading, refresh } = useGatePass({ limit: 100 });
+  const { passes, loading, refresh } = useGatePass({ all: true });
   const [datePreset, setDatePreset] = useState('all');
   const [liveStats, setLiveStats] = useState(null);
   const [user, setUser] = useState(null);
@@ -156,7 +156,7 @@ export default function DashboardPage() {
           value={stats.issuedCount}
           icon={Truck}
           color="accent"
-          trend="Active outward passes"
+          trend="Total outward passes dispatched"
         />
         <StatsCard
           title="Credited"
@@ -164,7 +164,7 @@ export default function DashboardPage() {
           value={stats.creditedCount}
           icon={RotateCcw}
           color="warning"
-          trend="Inward returned transformers"
+          trend="Total returned jobs credited"
         />
         <StatsCard
           title="Completed"

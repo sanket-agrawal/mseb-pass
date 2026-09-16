@@ -34,7 +34,7 @@ export default function ExportPage() {
     setLoading(true);
     try {
       const [passRes, officeRes, driverRes] = await Promise.all([
-        gatePassAPI.list(),
+        gatePassAPI.list({ all: true }),
         officeAPI.list(),
         driverAPI.list(),
       ]);

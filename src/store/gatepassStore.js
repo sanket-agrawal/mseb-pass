@@ -2,7 +2,7 @@ import { gatePassAPI, driverAPI, officeAPI, shareAPI } from '@/lib/api';
 
 export async function getGatePasses(filters = {}) {
   try {
-    const res = await gatePassAPI.list(filters);
+    const res = await gatePassAPI.list({ all: true, ...filters });
     return res?.data?.gatepasses || res?.data || [];
   } catch (err) {
     console.error('Error fetching gate passes:', err);

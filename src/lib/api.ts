@@ -132,7 +132,11 @@ export const authAPI = {
 export const gatePassAPI = {
   list: (filters: Record<string, any> = {}) => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, String(v)); });
+    const finalFilters = { ...filters };
+    if (!finalFilters.page && !finalFilters.limit && finalFilters.all === undefined) {
+      finalFilters.all = true;
+    }
+    Object.entries(finalFilters).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') params.set(k, String(v)); });
     return request(`/gatepasses?${params}`);
   },
 
