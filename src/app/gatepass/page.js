@@ -1,20 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GatePassTable from '@/components/gatepass/GatePassTable';
 import GatePassCard from '@/components/gatepass/GatePassCard';
 import StatusUpdateModal from '@/components/gatepass/StatusUpdateModal';
+import Pagination from '@/components/ui/Pagination';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import SearchInput from '@/components/ui/SearchInput';
 import Card from '@/components/ui/Card';
+import EmptyState from '@/components/ui/EmptyState';
 import { gatePassAPI, exportAPI } from '@/lib/api';
-import { Plus, Search, LayoutGrid, List, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { Plus, LayoutGrid, List, FileSpreadsheet, RefreshCw, FileQuestion } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAuthUser, canCreateGatePass } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+
+const TABS = [
+  { id: 'all', label: 'All Passes' },
+  { id: 'outward', label: 'Outward (जावक)', type: 'outward' },
+  { id: 'inward', label: 'Inward (आवक)', type: 'inward' },
+];
 
 export default function GatePassDirectoryPage() {
   const router = useRouter();
@@ -23,72 +30,102 @@ export default function GatePassDirectoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [viewMode, setViewMode] = useState('table');
   const [selectedPassForStatus, setSelectedPassForStatus] = useState(null);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const isFirstMount = useRef(true);
+
   useEffect(() => {
     setUser(getAuthUser());
-    fetchPasses();
-  }, [activeTab, typeFilter]);
+  }, []);
 
-  const fetchPasses = async () => {
+  const fetchPasses = useCallback(async (targetPage = page, targetLimit = limit, targetTab = activeTab, targetSearch = search) => {
     setLoading(true);
     try {
-      const filters = { all: true };
-      if (activeTab !== 'all' && activeTab !== 'in_transit' && activeTab !== 'delivered') {
-        filters.type = activeTab;
+      const filters = {
+        page: targetPage,
+        limit: targetLimit,
+      };
+
+      const selectedTabObj = TABS.find((t) => t.id === targetTab);
+      if (selectedTabObj?.type) {
+        filters.type = selectedTabObj.type;
       }
-      if (activeTab === 'in_transit') filters.status = 'in_transit';
-      if (activeTab === 'delivered') filters.status = 'delivered';
-      if (typeFilter !== 'all') filters.type = typeFilter;
-      if (search) filters.search = search;
+      if (selectedTabObj?.status) {
+        filters.status = selectedTabObj.status;
+      }
+
+      if (targetSearch && targetSearch.trim()) {
+        filters.search = targetSearch.trim();
+      }
 
       const res = await gatePassAPI.list(filters);
       if (res && res.data) {
-        setPasses(res.data.gatepasses || res.data || []);
+        const passList = Array.isArray(res.data) ? res.data : (res.data.gatepasses || []);
+        setPasses(passList);
+
+        if (res.pagination) {
+          setTotalItems(res.pagination.total ?? passList.length);
+          setTotalPages(res.pagination.totalPages ?? Math.max(1, Math.ceil((res.pagination.total || passList.length) / targetLimit)));
+        } else {
+          setTotalItems(passList.length);
+          setTotalPages(Math.max(1, Math.ceil(passList.length / targetLimit)));
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load gate passes:', err);
       toast.error('Failed to load gate passes');
     } finally {
       setLoading(false);
     }
+  }, [page, limit, activeTab, search]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (isFirstMount.current) return;
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchPasses(1, limit, activeTab, search);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Page / Limit / Tab changes effect
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      fetchPasses(1, limit, activeTab, search);
+      return;
+    }
+    fetchPasses(page, limit, activeTab, search);
+  }, [page, limit, activeTab]);
+
+  const handleTabChange = (tabId) => {
+    if (tabId === activeTab) return;
+    setActiveTab(tabId);
+    setPage(1);
   };
 
-  const filteredPasses = passes.filter((p) => {
-    // If user is Admin (not Super Admin), filter passes of user's division
-    const roles = Array.isArray(user?.roles) ? user.roles : (user?.role ? [user.role] : []);
-    const isSuperAdmin = roles.includes('super_admin');
-    const isAdmin = roles.includes('admin');
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-    if (isAdmin && !isSuperAdmin) {
-      const userDiv = (user?.division || user?.office?.division || 'Dhule').toLowerCase();
-      const passDiv = (p.destination_division || p.from_office?.division || 'Dhule').toLowerCase();
-      
-      const isDhuleDondaichaMatch = 
-        (userDiv.includes('dhule') || userDiv.includes('dondaicha')) &&
-        (passDiv.includes('dhule') || passDiv.includes('dondaicha'));
+  const handlePageSizeChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1);
+  };
 
-      if (!passDiv.includes(userDiv) && !userDiv.includes(passDiv) && !isDhuleDondaichaMatch) {
-        return false;
-      }
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const matchId = (p.display_id || p.id || '').toLowerCase().includes(q);
-      const matchSerial = String(p.serial_number || '').includes(q);
-      const matchDriver = (p.driver_name || '').toLowerCase().includes(q);
-      const matchSub = (p.destination_substation || '').toLowerCase().includes(q);
-      const matchMat = (p.materials || []).some(m =>
-        (m.serial_number || '').toLowerCase().includes(q) ||
-        (m.make || '').toLowerCase().includes(q)
-      );
-      return matchId || matchSerial || matchDriver || matchSub || matchMat;
-    }
-    return true;
-  });
+  const handleReload = () => {
+    fetchPasses(page, limit, activeTab, search);
+  };
 
   const handleView = (pass) => {
     router.push(`/gatepass/${pass.id}`);
@@ -104,7 +141,7 @@ export default function GatePassDirectoryPage() {
         await gatePassAPI.updateStatus(selectedPassForStatus.id, newStatus, remarks);
         toast.success(`Updated ${selectedPassForStatus.display_id || selectedPassForStatus.id} status to ${newStatus}`);
         setSelectedPassForStatus(null);
-        fetchPasses();
+        fetchPasses(page, limit, activeTab, search);
       } catch (err) {
         toast.error(err.message || 'Status update failed');
       }
@@ -114,7 +151,13 @@ export default function GatePassDirectoryPage() {
   const handleExportFiltered = async () => {
     toast.loading(`Exporting gate passes...`, { id: 'directory-export' });
     try {
-      const blob = await exportAPI.excel();
+      const filters = { all: true };
+      const selectedTabObj = TABS.find((t) => t.id === activeTab);
+      if (selectedTabObj?.type) filters.type = selectedTabObj.type;
+      if (selectedTabObj?.status) filters.status = selectedTabObj.status;
+      if (search && search.trim()) filters.search = search.trim();
+
+      const blob = await exportAPI.excel(filters);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -122,6 +165,7 @@ export default function GatePassDirectoryPage() {
       a.click();
       toast.success(`Exported Excel workbook successfully!`, { id: 'directory-export' });
     } catch (e) {
+      console.error(e);
       toast.error('Failed to export to Excel', { id: 'directory-export' });
     }
   };
@@ -133,7 +177,7 @@ export default function GatePassDirectoryPage() {
       actions={
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Button variant="outline" icon={FileSpreadsheet} onClick={handleExportFiltered}>
-            Export Excel ({filteredPasses.length})
+            Export Excel ({totalItems})
           </Button>
           {canCreateGatePass(user) && (
             <Link href="/gatepass/new" style={{ textDecoration: 'none' }}>
@@ -157,17 +201,20 @@ export default function GatePassDirectoryPage() {
           }}
         >
           {/* Status Tabs */}
-          <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--gray-100)', padding: '4px', borderRadius: 'var(--radius-md)', flexWrap: 'wrap' }}>
-            {[
-              { id: 'all', label: 'All Passes' },
-              { id: 'outward', label: 'Outward (जावक)' },
-              { id: 'inward', label: 'Inward (आवक)' },
-              { id: 'in_transit', label: 'In Transit' },
-              { id: 'delivered', label: 'Delivered / Completed' },
-            ].map((tab) => (
+          <div
+            style={{
+              display: 'flex',
+              gap: '4px',
+              backgroundColor: 'var(--gray-100)',
+              padding: '4px',
+              borderRadius: 'var(--radius-md)',
+              flexWrap: 'wrap'
+            }}
+          >
+            {TABS.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 style={{
                   padding: '6px 12px',
                   borderRadius: 'var(--radius-sm)',
@@ -189,21 +236,25 @@ export default function GatePassDirectoryPage() {
           {/* Search + View Mode */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <SearchInput
-              placeholder="Search GP#, Driver, Substation..."
+              placeholder="Search GP#, Driver, Substation, Sr No..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onClear={() => setSearch('')}
+              onClear={() => {
+                setSearch('');
+                setPage(1);
+              }}
               maxWidth="280px"
               size="sm"
             />
 
-            <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchPasses}>
+            <Button variant="ghost" size="sm" icon={RefreshCw} onClick={handleReload} disabled={loading}>
               Reload
             </Button>
 
             <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
               <button
                 onClick={() => setViewMode('table')}
+                aria-label="Table View"
                 style={{
                   padding: '8px 12px',
                   border: 'none',
@@ -216,6 +267,7 @@ export default function GatePassDirectoryPage() {
               </button>
               <button
                 onClick={() => setViewMode('grid')}
+                aria-label="Grid View"
                 style={{
                   padding: '8px 12px',
                   border: 'none',
@@ -234,10 +286,33 @@ export default function GatePassDirectoryPage() {
       {/* Main View */}
       {viewMode === 'table' ? (
         <GatePassTable
-          passes={filteredPasses}
+          passes={passes}
           onView={handleView}
           onDownload={handleDownload}
           loading={loading}
+        />
+      ) : loading ? (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '1.25rem'
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} style={{ padding: '1.5rem', height: '220px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="skeleton" style={{ height: '24px', width: '50%' }} />
+              <div className="skeleton" style={{ height: '18px', width: '80%' }} />
+              <div className="skeleton" style={{ height: '18px', width: '60%' }} />
+              <div className="skeleton" style={{ height: '32px', width: '100%', marginTop: 'auto' }} />
+            </Card>
+          ))}
+        </div>
+      ) : passes.length === 0 ? (
+        <EmptyState
+          icon={FileQuestion}
+          title="No Gate Passes Found"
+          description={search ? `No passes matching "${search}". Try adjusting your search query or active filter tab.` : "There are no gate passes found for this filter."}
         />
       ) : (
         <div
@@ -247,7 +322,7 @@ export default function GatePassDirectoryPage() {
             gap: '1.25rem'
           }}
         >
-          {filteredPasses.map((pass) => (
+          {passes.map((pass) => (
             <GatePassCard
               key={pass.id}
               pass={pass}
@@ -257,6 +332,19 @@ export default function GatePassDirectoryPage() {
           ))}
         </div>
       )}
+
+      {/* Pagination Controls */}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={limit}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        loading={loading}
+        itemName="gate passes"
+      />
 
       {/* Status Modal */}
       {selectedPassForStatus && (

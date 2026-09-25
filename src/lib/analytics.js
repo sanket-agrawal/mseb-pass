@@ -61,12 +61,21 @@ export function computeStats(allPasses = [], datePreset = 'all') {
     const year = d.getFullYear();
     const label = `${monthNames[mIdx]} '${String(year).slice(-2)}`;
     
-    const count = allPasses.filter(p => {
+    const monthPasses = allPasses.filter(p => {
       const pDate = new Date(p.date || p.created_at);
       return pDate.getMonth() === mIdx && pDate.getFullYear() === year;
-    }).length;
+    });
 
-    monthlyTrend.push({ label, value: count || (i === 0 ? total : 0) });
+    const outward = monthPasses.filter(p => p.type === 'outward').length;
+    const inward = monthPasses.filter(p => p.type === 'inward').length;
+    const count = monthPasses.length;
+
+    monthlyTrend.push({
+      label,
+      value: count || (i === 0 ? total : 0),
+      outward: outward || (i === 0 ? issuedCount : 0),
+      inward: inward || (i === 0 ? creditedCount : 0),
+    });
   }
 
   // Status Distribution for Donut Chart

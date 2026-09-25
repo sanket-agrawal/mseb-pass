@@ -11,7 +11,7 @@ import { toast } from 'react-hot-toast';
 import { getAuthUser, canEditGatePass } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
-export default function GatePassTable({ passes = [], onView, onDownload }) {
+export default function GatePassTable({ passes = [], onView, onDownload, loading = false }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
 
@@ -159,6 +159,7 @@ export default function GatePassTable({ passes = [], onView, onDownload }) {
       columns={columns}
       data={passes}
       onRowClick={onView}
+      loading={loading}
       emptyMessage="No Gate Passes Found"
       emptyDescription="Create your first gate pass using the New Pass button."
     />

@@ -19,7 +19,6 @@ import {
   FileText,
   Truck,
   RotateCcw,
-  CheckCircle,
   Plus,
   Download,
   RefreshCw,
@@ -62,7 +61,6 @@ export default function DashboardPage() {
         total: liveStats.total ?? computed.total,
         issuedCount: liveStats.issued ?? computed.issuedCount,
         creditedCount: liveStats.credited ?? computed.creditedCount,
-        completedCount: liveStats.completed ?? computed.completedCount,
         recentPasses: liveStats.recent_passes?.length ? liveStats.recent_passes : computed.recentPasses,
         monthlyTrend: liveStats.monthly_trend || computed.monthlyTrend,
         statusDistribution: liveStats.status_distribution || computed.statusDistribution,
@@ -137,7 +135,7 @@ export default function DashboardPage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: '1.25rem',
           marginBottom: '1.75rem',
         }}
@@ -165,14 +163,6 @@ export default function DashboardPage() {
           icon={RotateCcw}
           color="warning"
           trend="Total returned jobs credited"
-        />
-        <StatsCard
-          title="Completed"
-          marathiTitle="पूर्ण (Completed)"
-          value={stats.completedCount}
-          icon={CheckCircle}
-          color="success"
-          trend="Delivered & fully closed"
         />
       </div>
 

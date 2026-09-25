@@ -726,6 +726,16 @@ button, input, select, textarea {
   .field-value {
     width: 100%;
   }
+
+  .pagination-btn-text {
+    display: none;
+  }
+}
+
+/* Pagination Hover Effects */
+.pagination-container button:hover:not(:disabled) {
+  border-color: var(--primary-500) !important;
+  background-color: var(--primary-50) !important;
 }
 
 
