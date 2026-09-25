@@ -26,7 +26,8 @@ import {
   FileText,
   Clock,
   Send,
-  History
+  History,
+  QrCode
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -189,13 +190,9 @@ export default function GatePassDetailPage({ params }) {
             <Button variant="outline" icon={ArrowLeft}>Back</Button>
           </Link>
 
-          {/* <Button variant="accent" icon={() => <WhatsAppIcon size={18} color="#0f172a" />} onClick={handleQuickWhatsAppDriver}>
-            Send to Driver
-          </Button> */}
-
-          {/* <Button variant="secondary" icon={Share2} onClick={() => setShareModalOpen(true)}>
-            Share
-          </Button> */}
+          <Button variant="outline" icon={QrCode} onClick={() => setShareModalOpen(true)}>
+            QR & Share
+          </Button>
 
           <Button variant="outline" icon={CheckCircle} onClick={() => setStatusModalOpen(true)}>
             Status
@@ -583,6 +580,7 @@ export default function GatePassDetailPage({ params }) {
       <ShareModal
         isOpen={isShareModalOpen}
         onClose={() => setShareModalOpen(false)}
+        gatePass={pass}
         pass={pass}
       />
     </PageWrapper>

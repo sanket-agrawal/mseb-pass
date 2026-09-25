@@ -9,16 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.1.0",
+    "@supabase/supabase-js": "^2.48.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.474.0",
     "next": "^15.1.6",
+    "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@supabase/supabase-js": "^2.48.1",
-    "lucide-react": "^0.474.0",
-    "date-fns": "^4.1.0",
     "react-hot-toast": "^2.5.1",
-    "@react-pdf/renderer": "^4.1.0",
-    "xlsx": "^0.18.5",
-    "resend": "^4.1.1"
+    "resend": "^4.1.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "eslint": "^9.18.0",
