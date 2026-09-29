@@ -4,7 +4,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import Button from '@/components/ui/Button';
-import { TRANSFORMER_CAPACITY, WARRANTY_STATUS } from '@/lib/constants';
+import { TRANSFORMER_CAPACITY, WARRANTY_STATUS, GATEPASS_CATEGORIES } from '@/lib/constants';
 import { assetAPI, contractorAPI, userAPI, officeAPI } from '@/lib/api';
 import { Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -75,6 +75,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
         receiver_name: '',
         receiver_designation: '',
         remarks: `Return inward pass for ${linked.display_id || 'outward pass'}`,
+        category: linked.category || '',
         linked_gatepass_id: linked.id
       };
     }
@@ -82,6 +83,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
     if (data) {
       return {
         ...data,
+        category: data.category || '',
         date: data.date ? data.date.split('T')[0] : new Date().toISOString().split('T')[0],
         materials: (data.materials || []).map((m, idx) => ({
           ...m,
@@ -146,6 +148,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
       sender_cpf: '',
       receiver_name: '',
       receiver_designation: '',
+      category: '',
       remarks: DEFAULT_MARATHI_REMARKS,
       linked_gatepass_id: null
     };
@@ -403,6 +406,9 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
     if (!formData.recipient_name?.trim()) errs.recipient_name = 'Recipient name is required';
     if (!formData.from_office_id) errs.from_office_id = 'Source office is required';
     if (!formData.to_office_id) errs.to_office_id = 'Destination office is required';
+    if (formData.type === 'outward' && !formData.category) {
+      errs.category = 'Category is required for outward gatepass';
+    }
 
     formData.materials.forEach((m, idx) => {
       if (!m.capacity) errs[`capacity_${idx}`] = 'Capacity is required';
@@ -429,6 +435,7 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
 
     const payload = {
       ...formData,
+      category: formData.type === 'outward' ? (formData.category || null) : null,
       status: targetStatus,
       materials: formData.materials.map(m => {
         const item = {
@@ -859,6 +866,23 @@ export default function GatePassForm({ initialData = null, linkedPass = null, is
       {/* Section 4: Line Staff & Official Details */}
       <Card header="4. Destination Line Staff & Official Details">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+          {formData.type === 'outward' && (
+            <Select
+              label="Category"
+              required
+              placeholder="Select Category..."
+              value={formData.category || ''}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, category: e.target.value }));
+                if (errors.category) {
+                  setErrors(prev => ({ ...prev, category: null }));
+                }
+              }}
+              options={GATEPASS_CATEGORIES}
+              error={errors.category}
+            />
+          )}
+
           <SearchableSelect
             label="Line Staff CPF Number"
             value={formData.line_staff_cpf}

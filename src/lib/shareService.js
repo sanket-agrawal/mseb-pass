@@ -1,3 +1,5 @@
+import { GATEPASS_CATEGORY_MAP } from './constants';
+
 export function getPublicGatePassUrl(gatePass) {
   if (typeof window === 'undefined') return '';
   const origin = window.location.origin;
@@ -32,7 +34,7 @@ export function formatWhatsAppMessage(gatePass, viewUrl) {
 
 👷 *Line Staff:* ${gatePass.line_staff_name || '-'}
 📱 *Contact:* ${gatePass.line_staff_mobile || '-'}
-
+${gatePass.category ? `🏷️ *Category:* ${GATEPASS_CATEGORY_MAP[gatePass.category] || gatePass.category}\n` : ''}
 🔗 *View/Download:* ${viewUrl}
 
 ━━━━━━━━━━━━━━━━━━

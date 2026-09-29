@@ -167,7 +167,7 @@ export function canManageUsers(user) {
 }
 
 export function canManageAssets(user) {
-  return hasRole(user, 'super_admin');
+  return hasAnyRole(user, ['super_admin', 'admin']);
 }
 
 export function canViewAuditTrail(user) {

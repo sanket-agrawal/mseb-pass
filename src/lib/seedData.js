@@ -158,6 +158,7 @@ export const INITIAL_GATEPASSES = [
     line_staff_name: 'Rohit Salunkhe',
     line_staff_mobile: '9427166630',
     line_staff_cpf: '2645050',
+    category: 'AG',
     sender_name: 'Sub Divisional Officer',
     sender_designation: 'SDO Dondaicha',
     receiver_name: 'Rohit Salunkhe',

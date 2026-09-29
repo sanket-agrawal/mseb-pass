@@ -3,6 +3,7 @@
 import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import LOGO_BASE64 from '@/lib/logoBase64';
+import { GATEPASS_CATEGORY_MAP } from '@/lib/constants';
 
 const styles = StyleSheet.create({
   page: {
@@ -364,7 +365,7 @@ export function GatePassPDF({ data }) {
           {/* Line Staff Section */}
           <View style={styles.staffSection}>
             <Text style={{ fontSize: 8.2, color: '#1e293b', fontWeight: 'bold' }}>
-              Destination Line Staff: {sanitizeText(data.line_staff_name) || 'N/A'} | Mob: {sanitizeText(data.line_staff_mobile) || 'N/A'} | CPF: {sanitizeText(data.line_staff_cpf) || 'N/A'}
+              Destination Line Staff: {sanitizeText(data.line_staff_name) || 'N/A'} | Mob: {sanitizeText(data.line_staff_mobile) || 'N/A'} | CPF: {sanitizeText(data.line_staff_cpf) || 'N/A'}{data.category ? ` | Category: ${sanitizeText(GATEPASS_CATEGORY_MAP[data.category] || data.category)}` : ''}
             </Text>
           </View>
 

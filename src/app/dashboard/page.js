@@ -15,6 +15,7 @@ import { computeStats } from '@/lib/analytics';
 import { dashboardAPI, exportAPI } from '@/lib/api';
 import { getAuthUser } from '@/lib/auth';
 import Link from 'next/link';
+import SubdivisionStats from '@/components/dashboard/SubdivisionStats';
 import {
   FileText,
   Truck,
@@ -22,6 +23,7 @@ import {
   Plus,
   Download,
   RefreshCw,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -66,9 +68,15 @@ export default function DashboardPage() {
         statusDistribution: liveStats.status_distribution || computed.statusDistribution,
         topSubstations: liveStats.top_substations || computed.topSubstations,
         contractorPerformance: liveStats.contractor_performance || computed.contractorPerformance,
+        totalAssets: liveStats.total_assets ?? (computed.totalAssets || 7575),
+        subdivisionStats: liveStats.subdivision_stats || computed.subdivisionStats || [],
       };
     }
-    return computed;
+    return {
+      ...computed,
+      totalAssets: computed.totalAssets || 7575,
+      subdivisionStats: computed.subdivisionStats || []
+    };
   }, [passes, datePreset, liveStats]);
 
   const handleView = (pass) => {
@@ -164,7 +172,19 @@ export default function DashboardPage() {
           color="warning"
           trend="Total returned jobs credited"
         />
+        <StatsCard
+          title="Total Assets"
+          marathiTitle="एकूण रोहित्र (DTC)"
+          value={(stats.totalAssets || 7575).toLocaleString()}
+          icon={Zap}
+          color="success"
+          trend="4 Sub-Divisions (7,575 DTCs)"
+          onClick={() => router.push('/assets')}
+        />
       </div>
+
+      {/* Sub-Division Failure Rate & Health Monitor */}
+      <SubdivisionStats stats={stats.subdivisionStats} />
 
       {/* Charts Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem', marginBottom: '1.75rem' }}>
@@ -177,27 +197,33 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Details Row: Recent Passes + Top Substations */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem', marginBottom: '1.75rem' }}>
-        {/* Recent Passes */}
-        <Card
-          header={
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Recent Gate Passes</span>
-              <Link href="/gatepass" style={{ textDecoration: 'none' }}>
-                <Button variant="outline" size="sm">View All</Button>
-              </Link>
+      {/* Redesigned Full-Width Recent Gate Passes Section */}
+      <Card
+        style={{ marginBottom: '1.75rem' }}
+        header={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <span style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--gray-900)' }}>Recent Gate Passes</span>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', display: 'block', marginTop: '2px' }}>
+                Latest 5 gate pass movements across all subdivisions
+              </span>
             </div>
-          }
-        >
-          <GatePassTable
-            passes={stats.recentPasses}
-            onView={handleView}
-            onDownload={handleDownloadPdf}
-            loading={loading}
-          />
-        </Card>
+            <Link href="/gatepass" style={{ textDecoration: 'none' }}>
+              <Button variant="outline" size="sm">View All Passes →</Button>
+            </Link>
+          </div>
+        }
+      >
+        <GatePassTable
+          passes={(stats.recentPasses || []).slice(0, 5)}
+          onView={handleView}
+          onDownload={handleDownloadPdf}
+          loading={loading}
+        />
+      </Card>
 
+      {/* Bottom Analytics Row: Top Substations + Contractor Performance */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem', marginBottom: '1.75rem' }}>
         {/* Top Substations */}
         <Card header="Top Substations by Gate Pass Volume">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '0.5rem 0' }}>
@@ -223,12 +249,12 @@ export default function DashboardPage() {
             })}
           </div>
         </Card>
-      </div>
 
-      {/* Contractor Performance Leaderboard */}
-      <Card header="Contractor Performance Leaderboard (कंत्राटदार कार्य अहवाल)">
-        <HorizontalBar data={stats.contractorPerformance || stats.driverPerformance} />
-      </Card>
+        {/* Contractor Performance Leaderboard */}
+        <Card header="Contractor Performance Leaderboard (कंत्राटदार कार्य अहवाल)">
+          <HorizontalBar data={stats.contractorPerformance || stats.driverPerformance} />
+        </Card>
+      </div>
     </PageWrapper>
   );
 }

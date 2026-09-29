@@ -124,6 +124,8 @@ export function computeStats(allPasses = [], datePreset = 'all') {
     topSubstations,
     contractorPerformance,
     driverPerformance: contractorPerformance,
-    recentPasses: filteredPasses.slice(0, 5)
+    recentPasses: filteredPasses.slice(0, 5),
+    totalAssets: 0,
+    subdivisionStats: []
   };
 }

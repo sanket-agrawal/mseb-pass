@@ -14,6 +14,7 @@ import Loader from '@/components/ui/Loader';
 import { gatePassAPI, shareAPI } from '@/lib/api';
 import { downloadGatePass } from '@/lib/pdfService';
 import { shareViaWhatsApp } from '@/lib/shareService';
+import { GATEPASS_CATEGORY_MAP } from '@/lib/constants';
 import {
   ArrowLeft,
   Download,
@@ -508,6 +509,22 @@ export default function GatePassDetailPage({ params }) {
                 <div><strong>Inspection Staff Name:</strong> {pass.line_staff_name || '-'}</div>
                 <div><strong>Staff Mobile Phone:</strong> {pass.line_staff_mobile || '-'}</div>
                 <div><strong>Staff CPF Number:</strong> {pass.line_staff_cpf || '-'}</div>
+                {pass.category && (
+                  <div>
+                    <strong>Category:</strong>{' '}
+                    <span style={{ 
+                      display: 'inline-block',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-sm, 4px)',
+                      backgroundColor: 'var(--primary-50, #eff6ff)',
+                      color: 'var(--primary-700, #1d4ed8)',
+                      fontWeight: 600,
+                      fontSize: 'var(--text-xs, 12px)'
+                    }}>
+                      {GATEPASS_CATEGORY_MAP[pass.category] || pass.category}
+                    </span>
+                  </div>
+                )}
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 8, marginTop: 4 }}>
                   <strong>Issued By (Sender / देणारे):</strong> {pass.sender_name} ({pass.sender_designation || 'SDO'}) {pass.sender_cpf ? `• CPF: ${pass.sender_cpf}` : ''}
                 </div>

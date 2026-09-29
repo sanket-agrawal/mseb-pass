@@ -1,25 +1,44 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
+import SearchInput from '@/components/ui/SearchInput';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import Pagination from '@/components/ui/Pagination';
 import { assetAPI, officeAPI } from '@/lib/api';
 import { TRANSFORMER_CAPACITY, ASSET_PHASE } from '@/lib/constants';
+import { getAuthUser, canManageAssets } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
-import { Plus, Edit2, Zap, MapPin } from 'lucide-react';
+import { Plus, Edit2, Zap, MapPin, RefreshCw, UploadCloud } from 'lucide-react';
+import PageWrapper from '@/components/layout/PageWrapper';
+import AssetUploadModal from '@/components/assets/AssetUploadModal';
 
 export default function AssetsPage() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
   const [assets, setAssets] = useState([]);
   const [offices, setOffices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [selectedAssetForUpload, setSelectedAssetForUpload] = useState(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  const isFirstMount = useRef(true);
 
   const [formData, setFormData] = useState({
     asset_code: '',
@@ -37,25 +56,100 @@ export default function AssetsPage() {
     phase: 'THREE',
   });
 
-  const loadData = async () => {
+  // Verify access for admin & super_admin
+  useEffect(() => {
+    const authUser = getAuthUser();
+    setUser(authUser);
+    if (authUser && !canManageAssets(authUser)) {
+      toast.error('Access restricted to Admin and Super Admin roles');
+      router.push('/dashboard');
+    }
+  }, [router]);
+
+  const fetchOffices = async () => {
     try {
-      setIsLoading(true);
-      const [assetRes, offRes] = await Promise.all([
-        assetAPI.list({ search, limit: 100 }),
-        officeAPI.list()
-      ]);
-      setAssets(assetRes.data || assetRes.assets || []);
+      const offRes = await officeAPI.list();
       setOffices(offRes.data || offRes.offices || []);
     } catch (err) {
+      console.error('Failed to load offices', err);
+    }
+  };
+
+  const loadData = useCallback(async (targetPage = page, targetLimit = limit, targetSearch = search) => {
+    try {
+      setIsLoading(true);
+      const query = {
+        page: targetPage,
+        limit: targetLimit,
+      };
+      if (targetSearch && targetSearch.trim()) {
+        query.search = targetSearch.trim();
+      }
+
+      const assetRes = await assetAPI.list(query);
+      if (assetRes && assetRes.data) {
+        const assetList = Array.isArray(assetRes.data) ? assetRes.data : (assetRes.data.assets || []);
+        setAssets(assetList);
+
+        if (assetRes.pagination) {
+          setTotalItems(assetRes.pagination.total ?? assetList.length);
+          setTotalPages(assetRes.pagination.totalPages ?? Math.max(1, Math.ceil((assetRes.pagination.total || assetList.length) / targetLimit)));
+        } else {
+          setTotalItems(assetList.length);
+          setTotalPages(Math.max(1, Math.ceil(assetList.length / targetLimit)));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load assets', err);
       toast.error('Failed to load assets');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadData();
-  }, [search]);
+    fetchOffices();
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (isFirstMount.current) return;
+    const timer = setTimeout(() => {
+      setPage(1);
+      loadData(1, limit, search);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [search, limit, loadData]);
+
+  // Page / Limit change effect
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      loadData(1, limit, search);
+      return;
+    }
+    loadData(page, limit, search);
+  }, [page, limit, loadData]);
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1);
+  };
+
+  const handleReload = () => {
+    loadData(page, limit, search);
+  };
+
+  const handleOpenUploadModal = (asset) => {
+    setSelectedAssetForUpload(asset);
+    setIsUploadModalOpen(true);
+  };
 
   const handleOpenModal = (asset = null) => {
     if (asset) {
@@ -106,7 +200,7 @@ export default function AssetsPage() {
         toast.success('Asset created successfully');
       }
       setIsModalOpen(false);
-      loadData();
+      loadData(page, limit, search);
     } catch (err) {
       toast.error(err.message || 'Failed to save asset');
     }
@@ -172,36 +266,75 @@ export default function AssetsPage() {
     {
       header: 'Actions',
       cell: (row) => (
-        <Button size="sm" variant="ghost" icon={Edit2} onClick={() => handleOpenModal(row)}>
-          Edit
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={UploadCloud}
+            onClick={() => handleOpenUploadModal(row)}
+            title="Upload / View Documents & Media"
+            style={{ color: 'var(--primary-700)' }}
+          >
+            Files
+          </Button>
+          <Button size="sm" variant="ghost" icon={Edit2} onClick={() => handleOpenModal(row)}>
+            Edit
+          </Button>
+        </div>
       ),
     },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--gray-900)' }}>Transformers & Assets</h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-500)', marginTop: '4px' }}>
-            Master inventory of DTC transformers, capacities, phases, and GPS coordinates.
-          </p>
+    <PageWrapper
+      title="Transformers & Assets"
+      subtitle="Master inventory of DTC transformers, capacities, phases, and GPS coordinates."
+      actions={
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <Button variant="ghost" size="sm" icon={RefreshCw} onClick={handleReload} title="Refresh assets">
+            Refresh
+          </Button>
+          <Button variant="accent" icon={Plus} onClick={() => handleOpenModal()}>
+            Add Asset
+          </Button>
         </div>
-        <Button variant="accent" icon={Plus} onClick={() => handleOpenModal()}>
-          Add Asset
-        </Button>
-      </div>
+      }
+    >
 
       <Card>
-        <div style={{ marginBottom: '1rem', maxWidth: '320px' }}>
-          <Input
-            placeholder="Search DTC, serial number, make..."
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
+          <SearchInput
+            placeholder="Search DTC, serial number, make, village..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch('')}
+            maxWidth="400px"
           />
+          {totalItems > 0 && (
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontWeight: 600 }}>
+              Total: {totalItems.toLocaleString()} {totalItems === 1 ? 'transformer' : 'transformers'}
+            </span>
+          )}
         </div>
-        <Table columns={columns} data={assets} isLoading={isLoading} emptyMessage="No assets found." />
+
+        <Table
+          columns={columns}
+          data={assets}
+          isLoading={isLoading}
+          emptyMessage={search ? `No assets matching "${search}".` : "No assets found."}
+        />
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={limit}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          loading={isLoading}
+          itemName="transformers"
+        />
       </Card>
 
       <Modal
@@ -311,6 +444,18 @@ export default function AssetsPage() {
           </div>
         </div>
       </Modal>
-    </div>
+
+      {selectedAssetForUpload && (
+        <AssetUploadModal
+          asset={selectedAssetForUpload}
+          isOpen={isUploadModalOpen}
+          onClose={() => {
+            setIsUploadModalOpen(false);
+            setSelectedAssetForUpload(null);
+          }}
+          onUpdated={() => loadData(page, limit, search)}
+        />
+      )}
+    </PageWrapper>
   );
 }

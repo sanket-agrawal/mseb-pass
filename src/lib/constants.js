@@ -20,6 +20,27 @@ export const GATEPASS_TYPE_CONFIG = {
   [GATEPASS_TYPE.INWARD]: { label: 'Inward (आवक)', color: 'amber' },
 };
 
+export const GATEPASS_CATEGORY = {
+  AG: 'AG',
+  IND: 'IND',
+  PWW: 'PWW',
+  OTHERS: 'OTHERS',
+};
+
+export const GATEPASS_CATEGORIES = [
+  { value: GATEPASS_CATEGORY.AG, label: 'AG' },
+  { value: GATEPASS_CATEGORY.IND, label: 'IND (Industrial)' },
+  { value: GATEPASS_CATEGORY.PWW, label: 'Water Supply (PWW)' },
+  { value: GATEPASS_CATEGORY.OTHERS, label: 'Others' },
+];
+
+export const GATEPASS_CATEGORY_MAP = {
+  [GATEPASS_CATEGORY.AG]: 'AG',
+  [GATEPASS_CATEGORY.IND]: 'IND (Industrial)',
+  [GATEPASS_CATEGORY.PWW]: 'Water Supply (PWW)',
+  [GATEPASS_CATEGORY.OTHERS]: 'Others',
+};
+
 export const WARRANTY_STATUS = {
   GP: 'GP',
   FRESH: 'FRESH',

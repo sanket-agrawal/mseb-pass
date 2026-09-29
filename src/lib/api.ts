@@ -25,13 +25,20 @@ function clearTokens() {
 async function request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
 
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const config: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
     ...options,
+    headers,
   };
 
   const res = await fetch(`${API_BASE}${endpoint}`, config);
@@ -210,13 +217,27 @@ export const officeAPI = {
 export const assetAPI = {
   list: (filters: Record<string, any> = {}) => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, String(v)); });
-    return request(`/assets?${params}`);
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    });
+    const qs = params.toString();
+    return request(`/assets${qs ? `?${qs}` : ''}`);
   },
   lookupDTC: (dtc: string) => request(`/assets/dtc/${dtc}`),
   create: (data: any) => request('/assets', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => request(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   bulkImport: (assets: any[]) => request('/assets/bulk', { method: 'POST', body: JSON.stringify({ assets }) }),
+  getUploads: (assetId: string) => request(`/assets/${assetId}/uploads`),
+  uploadFiles: (assetId: string, files: (File | Blob)[]) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+    return request(`/assets/${assetId}/uploads`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+  deleteUpload: (assetId: string, uploadId: string) =>
+    request(`/assets/${assetId}/uploads/${uploadId}`, { method: 'DELETE' }),
 };
 
 // ─── User API ───────────────────────────────────

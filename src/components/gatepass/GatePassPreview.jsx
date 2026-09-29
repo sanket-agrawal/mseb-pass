@@ -2,6 +2,7 @@
 
 import React from 'react';
 import LOGO_BASE64 from '@/lib/logoBase64';
+import { GATEPASS_CATEGORY_MAP } from '@/lib/constants';
 
 export default function GatePassPreview({ data, className = '' }) {
   if (!data) return null;
@@ -161,6 +162,9 @@ export default function GatePassPreview({ data, className = '' }) {
         <div className="preview-staff-box">
           <strong>Destination Line Staff: </strong>
           {data.line_staff_name || 'N/A'} | <strong>Mob: </strong>{data.line_staff_mobile || 'N/A'} | <strong>CPF: </strong>{data.line_staff_cpf || 'N/A'}
+          {data.category && (
+            <> | <strong>Category: </strong>{GATEPASS_CATEGORY_MAP[data.category] || data.category}</>
+          )}
         </div>
 
         {/* Condition Remarks */}

@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { GATEPASS_CATEGORY_MAP } from './constants';
 
 function calculateColWidths(data) {
   if (!data || data.length === 0) return [];
@@ -45,6 +46,7 @@ export function exportGatePassesToExcel(gatePasses = [], options = {}) {
       'DTC No.': mat.dtc_number || '',
       'Line Staff Name': gp.line_staff_name || '',
       'Line Staff Mobile': gp.line_staff_mobile || '',
+      'Category': gp.category ? (GATEPASS_CATEGORY_MAP[gp.category] || gp.category) : '',
       'Remarks (शेरा)': gp.remarks || ''
     };
   });
