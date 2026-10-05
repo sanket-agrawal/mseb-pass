@@ -10,7 +10,8 @@ export default function Modal({
   title,
   children,
   footer,
-  size = 'md' // sm | md | lg | xl
+  size = 'md', // sm | md | lg | xl | 2xl | 3xl | full
+  maxWidth
 }) {
   const [mounted, setMounted] = useState(false);
 
@@ -37,11 +38,16 @@ export default function Modal({
   if (!isOpen || !mounted) return null;
 
   const sizeMap = {
-    sm: '400px',
-    md: '540px',
-    lg: '720px',
-    xl: '900px'
+    sm: '420px',
+    md: '560px',
+    lg: '760px',
+    xl: '960px',
+    '2xl': '1160px',
+    '3xl': '1320px',
+    full: '96vw'
   };
+
+  const effectiveMaxWidth = maxWidth || sizeMap[size] || sizeMap.md;
 
   const modalContent = (
     <div
@@ -57,7 +63,7 @@ export default function Modal({
         justifyContent: 'center',
         backgroundColor: 'rgba(15, 23, 42, 0.65)',
         backdropFilter: 'blur(4px)',
-        padding: '1rem',
+        padding: '1.25rem',
         animation: 'fadeIn 0.2s ease-out'
       }}
       onClick={onClose}
@@ -68,8 +74,8 @@ export default function Modal({
           borderRadius: 'var(--radius-xl)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
           width: '100%',
-          maxWidth: sizeMap[size] || sizeMap.md,
-          maxHeight: '85vh',
+          maxWidth: effectiveMaxWidth,
+          maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',

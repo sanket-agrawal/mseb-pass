@@ -170,6 +170,15 @@ export function canManageAssets(user) {
   return hasAnyRole(user, ['super_admin', 'admin']);
 }
 
+export function canViewSectionData(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
+}
+
+export function canManageCorrespondence(user) {
+  return hasAnyRole(user, ['super_admin', 'admin']);
+}
+
 export function canViewAuditTrail(user) {
   return hasAnyRole(user, ['super_admin', 'admin']);
 }
+

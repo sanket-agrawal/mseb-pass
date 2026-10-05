@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Table from '@/components/ui/Table';
@@ -15,9 +16,10 @@ import { assetAPI, officeAPI } from '@/lib/api';
 import { TRANSFORMER_CAPACITY, ASSET_PHASE } from '@/lib/constants';
 import { getAuthUser, canManageAssets } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
-import { Plus, Edit2, Zap, MapPin, RefreshCw, UploadCloud } from 'lucide-react';
+import { Plus, Edit2, Zap, MapPin, RefreshCw, UploadCloud, FolderTree } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import AssetUploadModal from '@/components/assets/AssetUploadModal';
+
 
 export default function AssetsPage() {
   const router = useRouter();
@@ -291,6 +293,11 @@ export default function AssetsPage() {
       subtitle="Master inventory of DTC transformers, capacities, phases, and GPS coordinates."
       actions={
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <Link href="/sections">
+            <Button variant="secondary" size="sm" icon={FolderTree}>
+              Section-Wise View
+            </Button>
+          </Link>
           <Button variant="ghost" size="sm" icon={RefreshCw} onClick={handleReload} title="Refresh assets">
             Refresh
           </Button>

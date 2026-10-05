@@ -13,14 +13,12 @@ import {
   File as FileIcon,
   Trash2,
   ExternalLink,
-  Download,
-  AlertCircle,
-  CheckCircle2,
   X,
-  HardDrive
+  HardDrive,
+  AlertCircle
 } from 'lucide-react';
 
-const ALLOWED_EXTENSIONS = ['.docx', '.png', '.jpg', '.jpeg', '.pdf'];
+const ALLOWED_EXTENSIONS = ['.docx', '.doc', '.png', '.jpg', '.jpeg', '.pdf'];
 const MAX_FILES = 5;
 const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -47,7 +45,8 @@ function getFileIcon(fileName = '', mimeType = '') {
   return <FileIcon style={{ color: 'var(--gray-500)' }} size={20} />;
 }
 
-export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) {
+export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated, category = 'asset', enforceLimit }) {
+  const isLimitEnforced = enforceLimit !== undefined ? enforceLimit : category === 'asset';
   const [uploads, setUploads] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -60,12 +59,12 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
     if (!asset?.id) return;
     try {
       setIsLoading(true);
-      const res = await assetAPI.getUploads(asset.id);
+      const res = await assetAPI.getUploads(asset.id, category);
       if (res && res.data) {
         setUploads(res.data.uploads || []);
       }
     } catch (err) {
-      toast.error(err.message || 'Failed to load asset files');
+      toast.error(err.message || 'Failed to load files');
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +75,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
       setSelectedFiles([]);
       fetchUploads();
     }
-  }, [isOpen, asset?.id]);
+  }, [isOpen, asset?.id, category]);
 
   const currentCount = uploads.length;
   const currentTotalBytes = uploads.reduce((acc, u) => acc + (u.file_size || 0), 0);
@@ -99,15 +98,17 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
 
     if (valid.length === 0) return;
 
-    if (currentCount + selectedFiles.length + valid.length > MAX_FILES) {
-      toast.error(`Maximum ${MAX_FILES} files allowed. You can only add ${MAX_FILES - (currentCount + selectedFiles.length)} more.`);
-      return;
-    }
+    if (isLimitEnforced) {
+      if (currentCount + selectedFiles.length + valid.length > MAX_FILES) {
+        toast.error(`Maximum ${MAX_FILES} files allowed. You can only add ${MAX_FILES - (currentCount + selectedFiles.length)} more.`);
+        return;
+      }
 
-    const currentSelectedBytes = selectedFiles.reduce((acc, f) => acc + f.size, 0);
-    if (currentTotalBytes + currentSelectedBytes + addedBytes > MAX_TOTAL_SIZE) {
-      toast.error(`Total size exceeds 10 MB limit. Available space: ${formatBytes(remainingBytes - currentSelectedBytes)}`);
-      return;
+      const currentSelectedBytes = selectedFiles.reduce((acc, f) => acc + f.size, 0);
+      if (currentTotalBytes + currentSelectedBytes + addedBytes > MAX_TOTAL_SIZE) {
+        toast.error(`Total size exceeds 10 MB limit. Available space: ${formatBytes(remainingBytes - currentSelectedBytes)}`);
+        return;
+      }
     }
 
     setSelectedFiles((prev) => [...prev, ...valid]);
@@ -146,7 +147,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
     if (selectedFiles.length === 0) return;
     try {
       setIsUploading(true);
-      await assetAPI.uploadFiles(asset.id, selectedFiles);
+      await assetAPI.uploadFiles(asset.id, selectedFiles, category);
       toast.success(`${selectedFiles.length} file(s) uploaded successfully!`);
       setSelectedFiles([]);
       await fetchUploads();
@@ -173,6 +174,8 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
     }
   };
 
+  if (!isOpen) return null;
+
   const assetTitle = asset?.dtc_number ? `DTC-${asset.dtc_number}` : asset?.asset_code || 'Asset';
 
   return (
@@ -180,13 +183,17 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
       isOpen={isOpen}
       onClose={onClose}
       title={`Files & Attachments: ${assetTitle}`}
-      maxWidth="720px"
+      size="lg"
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <HardDrive size={14} />
             <span>
-              {currentCount}/5 files • {formatBytes(currentTotalBytes)} of 10 MB used
+              {enforceLimit ? (
+                `${currentCount}/${MAX_FILES} files • ${formatBytes(currentTotalBytes)} of 10 MB used`
+              ) : (
+                `${currentCount} file${currentCount === 1 ? '' : 's'} attached (${formatBytes(currentTotalBytes)})`
+              )}
             </span>
           </div>
           <Button variant="secondary" onClick={onClose}>
@@ -196,38 +203,40 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {/* Storage Quota Bar */}
-        <div
-          style={{
-            padding: '12px 16px',
-            backgroundColor: 'var(--gray-50)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-color)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
-            <span style={{ color: 'var(--gray-700)' }}>Asset Storage Quota</span>
-            <span style={{ color: currentTotalBytes > MAX_TOTAL_SIZE * 0.9 ? 'var(--danger-600)' : 'var(--primary-700)' }}>
-              {currentCount} / {MAX_FILES} files ({((currentTotalBytes / MAX_TOTAL_SIZE) * 100).toFixed(0)}% space)
-            </span>
+        {/* Storage Quota Bar (Only for Asset Management when enforceLimit is true) */}
+        {enforceLimit && (
+          <div
+            style={{
+              padding: '12px 16px',
+              backgroundColor: 'var(--gray-50)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+              <span style={{ color: 'var(--gray-700)' }}>Asset Storage Quota</span>
+              <span style={{ color: currentTotalBytes > MAX_TOTAL_SIZE * 0.9 ? 'var(--danger-600)' : 'var(--primary-700)' }}>
+                {currentCount} / {MAX_FILES} files ({((currentTotalBytes / MAX_TOTAL_SIZE) * 100).toFixed(0)}% space)
+              </span>
+            </div>
+            <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--gray-200)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  height: '100%',
+                  width: `${Math.min(100, (currentTotalBytes / MAX_TOTAL_SIZE) * 100)}%`,
+                  backgroundColor: currentTotalBytes > MAX_TOTAL_SIZE * 0.9 ? 'var(--danger-500)' : 'var(--primary-600)',
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
           </div>
-          <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--gray-200)', borderRadius: '3px', overflow: 'hidden' }}>
-            <div
-              style={{
-                height: '100%',
-                width: `${Math.min(100, (currentTotalBytes / MAX_TOTAL_SIZE) * 100)}%`,
-                backgroundColor: currentTotalBytes > MAX_TOTAL_SIZE * 0.9 ? 'var(--danger-500)' : 'var(--primary-600)',
-                transition: 'width 0.3s ease',
-              }}
-            />
-          </div>
-        </div>
+        )}
 
-        {/* Upload Zone (if under 5 files) */}
-        {remainingCount > 0 ? (
+        {/* Upload Zone */}
+        {(!enforceLimit || remainingCount > 0) ? (
           <div>
             <div
               onDragOver={handleDragOver}
@@ -252,7 +261,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept=".docx,.png,.jpg,.jpeg,.pdf"
+                accept=".docx,.doc,.png,.jpg,.jpeg,.pdf"
                 style={{ display: 'none' }}
                 onChange={handleFileSelect}
               />
@@ -274,7 +283,11 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
                 Click to browse or drag and drop files here
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                Accepted: <strong>DOCX, PNG, JPG, PDF</strong> • Max <strong>{remainingCount}</strong> more file(s) • Remaining: <strong>{formatBytes(remainingBytes)}</strong>
+                {enforceLimit ? (
+                  <>Accepted: <strong>DOCX, PNG, JPG, PDF</strong> • Max <strong>{remainingCount}</strong> more file(s) • Remaining: <strong>{formatBytes(remainingBytes)}</strong></>
+                ) : (
+                  <>Accepted: <strong>DOCX, PNG, JPG, PDF</strong></>
+                )}
               </div>
             </div>
 
@@ -344,7 +357,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
             }}
           >
             <AlertCircle size={18} />
-            <span>Maximum limit of 5 files reached for this asset. Delete an existing file to upload a new one.</span>
+            <span>Maximum limit of 5 files (10 MB) reached for this asset. Delete an existing file to upload a new one.</span>
           </div>
         )}
 
@@ -376,7 +389,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated }) 
               No documents or files uploaded yet for this asset.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
               {uploads.map((file) => {
                 const isDeleting = deletingId === file.id;
                 const uploadDate = file.created_at ? new Date(file.created_at).toLocaleDateString() : '';

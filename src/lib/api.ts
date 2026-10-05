@@ -227,11 +227,13 @@ export const assetAPI = {
   create: (data: any) => request('/assets', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => request(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   bulkImport: (assets: any[]) => request('/assets/bulk', { method: 'POST', body: JSON.stringify({ assets }) }),
-  getUploads: (assetId: string) => request(`/assets/${assetId}/uploads`),
-  uploadFiles: (assetId: string, files: (File | Blob)[]) => {
+  getUploads: (assetId: string, category: string = 'asset') =>
+    request(`/assets/${assetId}/uploads?category=${category}`),
+  uploadFiles: (assetId: string, files: (File | Blob)[], category: string = 'asset') => {
     const formData = new FormData();
     files.forEach((file) => formData.append('files', file));
-    return request(`/assets/${assetId}/uploads`, {
+    formData.append('category', category);
+    return request(`/assets/${assetId}/uploads?category=${category}`, {
       method: 'POST',
       body: formData,
     });
@@ -288,6 +290,46 @@ export const shareAPI = {
   history: (gatepassId: string) => request(`/share/${gatepassId}/notifications`),
 };
 
+// ─── Section Wise Asset API ──────────────────────
+export const sectionAPI = {
+  list: () => request('/sections'),
+  listAssets: (sectionId: string, filters: Record<string, any> = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    });
+    const qs = params.toString();
+    return request(`/sections/${sectionId}/assets${qs ? `?${qs}` : ''}`);
+  },
+};
+
+// ─── Agency & Correspondence API ────────────────
+export const agencyAPI = {
+  list: (filters: Record<string, any> = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    });
+    const qs = params.toString();
+    return request(`/agencies${qs ? `?${qs}` : ''}`);
+  },
+  get: (id: string) => request(`/agencies/${id}`),
+  create: (data: any) => request('/agencies', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => request(`/agencies/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => request(`/agencies/${id}`, { method: 'DELETE' }),
+  getUploads: (agencyId: string) => request(`/agencies/${agencyId}/uploads`),
+  uploadFiles: (agencyId: string, files: (File | Blob)[]) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+    return request(`/agencies/${agencyId}/uploads`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+  deleteUpload: (agencyId: string, uploadId: string) =>
+    request(`/agencies/${agencyId}/uploads/${uploadId}`, { method: 'DELETE' }),
+};
+
 // ─── Audit API ──────────────────────────────────
 export const auditAPI = {
   list: (filters: Record<string, any> = {}) => {
@@ -296,3 +338,4 @@ export const auditAPI = {
     return request(`/audit?${params}`);
   },
 };
+

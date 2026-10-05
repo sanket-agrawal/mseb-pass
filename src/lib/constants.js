@@ -67,6 +67,8 @@ export const NAV_ITEMS = [
   { label: 'Gate Passes', href: '/gatepass', icon: 'FileText' },
   { label: 'New Gate Pass', href: '/gatepass/new', icon: 'PlusCircle' },
   { label: 'Assets', href: '/assets', icon: 'Zap' },
+  { label: 'Section-Wise Data', href: '/sections', icon: 'FolderTree' },
+  { label: 'Correspondence', href: '/correspondence', icon: 'FileSignature' },
   { label: 'Contractors', href: '/contractors', icon: 'Truck' },
   { label: 'Substations', href: '/substations', icon: 'Building2' },
   { label: 'Users', href: '/users', icon: 'Users' },

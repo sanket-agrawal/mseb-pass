@@ -14,7 +14,9 @@ import {
   Users,
   Boxes,
   LogOut,
-  Zap
+  Zap,
+  FolderTree,
+  FileSignature
 } from 'lucide-react';
 import {
   logoutUser,
@@ -23,7 +25,9 @@ import {
   canManageContractors,
   canManageStations,
   canManageUsers,
-  canManageAssets
+  canManageAssets,
+  canViewSectionData,
+  canManageCorrespondence
 } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 
@@ -47,13 +51,13 @@ export default function Sidebar() {
     router.replace('/login');
   };
 
-
-
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, show: true },
     { label: 'Gate Passes', href: '/gatepass', icon: FileText, show: true },
     { label: 'Issue New Pass', href: '/gatepass/new', icon: PlusCircle, show: canCreateGatePass(user) },
     { label: 'Asset Management', href: '/assets', icon: Boxes, show: canManageAssets(user) },
+    { label: 'Section-Wise Data', href: '/sections', icon: FolderTree, show: canViewSectionData(user) },
+    { label: 'Correspondence', href: '/correspondence', icon: FileSignature, show: canManageCorrespondence(user) },
     { label: 'Contractors', href: '/contractors', icon: Truck, show: canManageContractors(user) },
     { label: 'Substations & Offices', href: '/substations', icon: Building2, show: canManageStations(user) },
     { label: 'Employee Management', href: '/users', icon: Users, show: canManageUsers(user) },
