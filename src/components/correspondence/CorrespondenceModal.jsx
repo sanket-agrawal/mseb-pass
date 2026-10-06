@@ -197,9 +197,26 @@ export default function CorrespondenceModal({ agency, isOpen, onClose, onUpdated
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <span style={{ fontWeight: 700, color: 'var(--primary-900)', fontSize: '15px' }}>
-              {agency?.name}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 700, color: 'var(--primary-900)', fontSize: '15px' }}>
+                {agency?.name}
+              </span>
+              {agency?.vendor_code && (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    padding: '2px 7px',
+                    borderRadius: '4px',
+                    backgroundColor: '#e0e7ff',
+                    color: '#3730a3',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  Code: {agency.vendor_code}
+                </span>
+              )}
+            </div>
             <span
               style={{
                 fontSize: '11px',
@@ -211,7 +228,7 @@ export default function CorrespondenceModal({ agency, isOpen, onClose, onUpdated
                 textTransform: 'uppercase'
               }}
             >
-              {agency?.type || 'Repair & Maintenance'}
+              {agency?.type || 'DT_Repairing Agency'}
             </span>
           </div>
           <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--gray-600)', flexWrap: 'wrap' }}>
