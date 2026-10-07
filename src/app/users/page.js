@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input';
 import SearchInput from '@/components/ui/SearchInput';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import Loader from '@/components/ui/Loader';
 import { userAPI, officeAPI } from '@/lib/api';
@@ -30,6 +31,8 @@ export default function UsersPage() {
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deactivatingUser, setDeactivatingUser] = useState(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
   const [importing, setImporting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -177,16 +180,18 @@ export default function UsersPage() {
     }
   };
 
-  const handleDeactivate = async (userToDeactivate) => {
-    if (!confirm(`Are you sure you want to deactivate ${userToDeactivate.full_name || userToDeactivate.first_name}?`)) {
-      return;
-    }
+  const handleConfirmDeactivate = async () => {
+    if (!deactivatingUser) return;
     try {
-      await userAPI.deactivate(userToDeactivate.id);
+      setIsDeactivating(true);
+      await userAPI.deactivate(deactivatingUser.id);
       toast.success('User account deactivated');
+      setDeactivatingUser(null);
       loadData();
     } catch (err) {
       toast.error('Failed to deactivate user');
+    } finally {
+      setIsDeactivating(false);
     }
   };
 
@@ -400,7 +405,7 @@ export default function UsersPage() {
                             Edit Roles
                           </Button>
                           {u.is_active && (
-                            <Button size="sm" variant="danger" icon={UserX} onClick={() => handleDeactivate(u)}>
+                            <Button size="sm" variant="danger" icon={UserX} onClick={() => setDeactivatingUser(u)}>
                               Deactivate
                             </Button>
                           )}
@@ -624,6 +629,21 @@ export default function UsersPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deactivatingUser}
+        onClose={() => setDeactivatingUser(null)}
+        onConfirm={handleConfirmDeactivate}
+        title="Deactivate User"
+        message={
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--gray-700)', lineHeight: 1.5 }}>
+            Are you sure you want to deactivate <strong>{deactivatingUser?.full_name || deactivatingUser?.first_name}</strong>?
+          </p>
+        }
+        confirmLabel="Deactivate Account"
+        loading={isDeactivating}
+        icon={UserX}
+      />
     </PageWrapper>
   );
 }

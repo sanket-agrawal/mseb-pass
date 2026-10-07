@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Loader from '@/components/ui/Loader';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { agencyAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import {
@@ -51,6 +52,7 @@ export default function CorrespondenceModal({ agency, isOpen, onClose, onUpdated
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { uploadId, fileName }
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -141,13 +143,18 @@ export default function CorrespondenceModal({ agency, isOpen, onClose, onUpdated
     }
   };
 
-  const handleDeleteFile = async (uploadId, fileName) => {
-    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) return;
+  const handleDeleteClick = (uploadId, fileName) => {
+    setDeleteTarget({ uploadId, fileName });
+  };
+
+  const handleConfirmDeleteFile = async () => {
+    if (!deleteTarget) return;
     try {
-      setDeletingId(uploadId);
-      await agencyAPI.deleteUpload(agency.id, uploadId);
+      setDeletingId(deleteTarget.uploadId);
+      await agencyAPI.deleteUpload(agency.id, deleteTarget.uploadId);
       toast.success('File deleted successfully');
-      setUploads((prev) => prev.filter((u) => u.id !== uploadId));
+      setDeleteTarget(null);
+      setUploads((prev) => prev.filter((u) => u.id !== deleteTarget.uploadId));
       if (onUpdated) onUpdated();
     } catch (err) {
       toast.error(err.message || 'Failed to delete file');
@@ -159,6 +166,7 @@ export default function CorrespondenceModal({ agency, isOpen, onClose, onUpdated
   if (!isOpen) return null;
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -477,7 +485,7 @@ export default function CorrespondenceModal({ agency, isOpen, onClose, onUpdated
                       )}
 
                       <button
-                        onClick={() => handleDeleteFile(file.id, file.file_name)}
+                        onClick={() => handleDeleteClick(file.id, file.file_name)}
                         disabled={deletingId === file.id}
                         style={{
                           padding: '6px 8px',
@@ -502,5 +510,21 @@ export default function CorrespondenceModal({ agency, isOpen, onClose, onUpdated
         </div>
       </div>
     </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDeleteFile}
+        title="Delete Document"
+        message={
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--gray-700)', lineHeight: 1.5 }}>
+            Are you sure you want to delete <strong>&ldquo;{deleteTarget?.fileName}&rdquo;</strong>? This action cannot be undone.
+          </p>
+        }
+        confirmLabel="Delete Document"
+        loading={!!deletingId}
+        icon={Trash2}
+      />
+    </>
   );
 }

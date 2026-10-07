@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Loader from '@/components/ui/Loader';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { assetAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import {
@@ -51,6 +52,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated, ca
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { uploadId, fileName }
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -159,12 +161,17 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated, ca
     }
   };
 
-  const handleDelete = async (uploadId, fileName) => {
-    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) return;
+  const handleDeleteClick = (uploadId, fileName) => {
+    setDeleteTarget({ uploadId, fileName });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      setDeletingId(uploadId);
-      await assetAPI.deleteUpload(asset.id, uploadId);
+      setDeletingId(deleteTarget.uploadId);
+      await assetAPI.deleteUpload(asset.id, deleteTarget.uploadId);
       toast.success('File deleted successfully');
+      setDeleteTarget(null);
       await fetchUploads();
       if (onUpdated) onUpdated();
     } catch (err) {
@@ -179,6 +186,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated, ca
   const assetTitle = asset?.dtc_number ? `DTC-${asset.dtc_number}` : asset?.asset_code || 'Asset';
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -456,7 +464,7 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated, ca
                         size="sm"
                         variant="ghost"
                         icon={Trash2}
-                        onClick={() => handleDelete(file.id, file.file_name)}
+                        onClick={() => handleDeleteClick(file.id, file.file_name)}
                         disabled={isDeleting}
                         style={{ color: 'var(--danger-600)' }}
                         title="Delete file"
@@ -472,5 +480,21 @@ export default function AssetUploadModal({ asset, isOpen, onClose, onUpdated, ca
         </div>
       </div>
     </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete File"
+        message={
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--gray-700)', lineHeight: 1.5 }}>
+            Are you sure you want to delete <strong>&ldquo;{deleteTarget?.fileName}&rdquo;</strong>? This action cannot be undone.
+          </p>
+        }
+        confirmLabel="Delete File"
+        loading={!!deletingId}
+        icon={Trash2}
+      />
+    </>
   );
 }
