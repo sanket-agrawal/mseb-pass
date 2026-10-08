@@ -224,6 +224,7 @@ export const assetAPI = {
     return request(`/assets${qs ? `?${qs}` : ''}`);
   },
   lookupDTC: (dtc: string) => request(`/assets/dtc/${dtc}`),
+  getFrequentOutward: (minCount: number = 2) => request(`/assets/frequent-outward?minCount=${minCount}`),
   create: (data: any) => request('/assets', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => request(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   bulkImport: (assets: any[]) => request('/assets/bulk', { method: 'POST', body: JSON.stringify({ assets }) }),

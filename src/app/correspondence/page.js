@@ -12,6 +12,7 @@ import SearchInput from '@/components/ui/SearchInput';
 import Pagination from '@/components/ui/Pagination';
 import PageWrapper from '@/components/layout/PageWrapper';
 import CorrespondenceModal from '@/components/correspondence/CorrespondenceModal';
+import AssetOutwardTracker from '@/components/correspondence/AssetOutwardTracker';
 import Loader from '@/components/ui/Loader';
 import { agencyAPI } from '@/lib/api';
 import { getAuthUser, canManageCorrespondence } from '@/lib/auth';
@@ -820,6 +821,9 @@ function CorrespondenceContent() {
               );
             })}
           </div>
+
+          {/* Section-Wise Asset Outward Issue Tracker (Count >= 2) */}
+          <AssetOutwardTracker />
         </div>
       ) : (
         /* Selected Category View */
