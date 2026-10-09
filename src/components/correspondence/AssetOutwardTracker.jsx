@@ -10,6 +10,8 @@ import Loader from '@/components/ui/Loader';
 import { getGatePasses } from '@/store/gatepassStore';
 import { assetAPI } from '@/lib/api';
 import { INITIAL_GATEPASSES } from '@/lib/seedData';
+import { exportAssetOutwardTrackerToExcel } from '@/lib/excelExport';
+import { toast } from 'react-hot-toast';
 import {
   Wrench,
   Layers,
@@ -26,7 +28,9 @@ import {
   TrendingUp,
   Tag,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export default function AssetOutwardTracker() {
@@ -164,8 +168,14 @@ export default function AssetOutwardTracker() {
           substation: pass.destination_substation || 'N/A',
           status: pass.status || 'issued',
           recipient: pass.recipient_name || pass.line_staff_name || 'N/A',
-          driver: pass.driver_name || 'N/A',
-          vehicle: pass.vehicle_number || 'N/A',
+          line_staff_name: pass.line_staff_name || pass.recipient_name || 'N/A',
+          line_staff_mobile: pass.line_staff_mobile || 'N/A',
+          line_staff_cpf: pass.line_staff_cpf || 'N/A',
+          driver_name: pass.driver_name || 'N/A',
+          driver_mobile: pass.driver_mobile || 'N/A',
+          vehicle_number: pass.vehicle_number || 'N/A',
+          contractor_name: pass.contractor_name || 'N/A',
+          sender_name: pass.sender_name || 'N/A',
           condition: mat.condition || 'good',
           remarks: mat.remarks || pass.remarks || ''
         });
@@ -241,6 +251,23 @@ export default function AssetOutwardTracker() {
   const handleOpenHistoryModal = (asset) => {
     setSelectedAssetForModal(asset);
     setIsHistoryModalOpen(true);
+  };
+
+  const handleExportExcel = () => {
+    if (!filteredAssets || filteredAssets.length === 0) {
+      toast.error('No assets available to export');
+      return;
+    }
+    try {
+      const filename = exportAssetOutwardTrackerToExcel(filteredAssets, {
+        sectionName: selectedSection,
+        filenamePrefix: 'Asset_Outward_Frequency_Report'
+      });
+      toast.success(`Exported ${filteredAssets.length} assets to ${filename}`);
+    } catch (err) {
+      console.error('Failed to export asset outward tracker data:', err);
+      toast.error('Failed to export Excel report');
+    }
   };
 
   // Table Columns Setup
@@ -456,6 +483,21 @@ export default function AssetOutwardTracker() {
             <AlertTriangle size={14} /> Filter Applied: Count ≥ 2 Outward Passes
           </span>
           <Button
+            variant="secondary"
+            size="sm"
+            icon={FileSpreadsheet}
+            onClick={handleExportExcel}
+            title="Export outward asset list & history to Excel"
+            style={{
+              backgroundColor: '#ecfdf5',
+              color: '#047857',
+              border: '1px solid #a7f3d0',
+              fontWeight: 700
+            }}
+          >
+            Export Excel
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             icon={RefreshCw}
@@ -630,14 +672,31 @@ export default function AssetOutwardTracker() {
             })}
           </div>
 
-          {/* Search Box */}
-          <SearchInput
-            placeholder="Search by serial no, make, capacity, DTC..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onClear={() => setSearchQuery('')}
-            maxWidth="320px"
-          />
+          {/* Search Box & Export Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <SearchInput
+              placeholder="Search by serial no, make, capacity, DTC..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery('')}
+              maxWidth="280px"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Download}
+              onClick={handleExportExcel}
+              title="Export current filtered asset list to Excel"
+              style={{
+                backgroundColor: '#059669',
+                color: '#ffffff',
+                border: 'none',
+                fontWeight: 700
+              }}
+            >
+              Export Excel ({filteredAssets.length})
+            </Button>
+          </div>
         </div>
 
         {/* Assets Table */}
